@@ -1,23 +1,11 @@
+# app/__init__.py
 from flask import Flask
 
 app = Flask(__name__)
 
+# config
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.secret_key = '2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5'
 
-app.secret_key = 'e2e62cdb171271f0b12e5043f9f84208eba1f05c8658704e'
-
- # ----Import all common routes 
+# import routes so they register on the app
 from app import views
-from app import users_views
-from app import community
-# from app import auth
-# from app import database
-# from app import admins_views
-# from app import members_views
-
-
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5002)
- 
-    

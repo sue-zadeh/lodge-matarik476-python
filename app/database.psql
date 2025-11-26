@@ -1,0 +1,23 @@
+
+-- -----------------------------------------------------
+-- Table Lodge
+-- -----------------------------------------------------
+
+CREATE DATABASE IF NOT EXISTS Lodge;
+USE Lodge;
+
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(80) UNIQUE NOT NULL CHECK (char_length(username) >= 5),
+    first_name VARCHAR(80) NOT NULL,
+    last_name VARCHAR(80) NOT NULL,
+    email VARCHAR(190) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(40) CHECK (phone ~ '^[0-9+ ]*$'),
+    birth_date DATE,
+    profile_image VARCHAR(255),
+    role VARCHAR(20) NOT NULL DEFAULT 'member' CHECK (role IN ('member','admin')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

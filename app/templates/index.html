@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Home – Lodge Matariki 476{% endblock %}
+
+{% block content %}
+<div class="hero-card text-center">
+    <h1 class="display-5 fw-bold mb-3">
+        A lodge of friendship, support, and community
+    </h1>
+    <p class="lead mb-4">
+        Welcome to Lodge Matariki 476. Members can log in to see announcements,
+        events, and lodge resources. Visitors can learn more about who we are.
+    </p>
+
+    {% if 'user_id' not in session %}
+        <a href="{{ url_for('register') }}" class="btn btn-login me-2">
+            Join the Lodge
+        </a>
+        <a href="{{ url_for('login') }}" class="btn btn-login">
+            Members Login
+        </a>
+    {% else %}
+        <a href="{{ url_for('profile') }}" class="btn btn-login">
+            Go to your profile
+        </a>
+    {% endif %}
+</div>
+{% endblock %}
