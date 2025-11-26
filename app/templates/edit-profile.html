@@ -1,0 +1,62 @@
+{% extends 'managingUser.html' %}
+
+{% block title %}Profile Page{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="text-center text-danger mb-3">Manage My Profile</h1>
+
+  <form action="/edit_profile" method="POST" enctype="multipart/form-data" class="bg-warning p-4 rounded">
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" class="form-control" id="username" name="username" value="{{ user['username'] }}" readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="fname">First Name</label>
+      <input type="text" class="form-control" id="fname" name="fname" value="{{ user['first_name'] }}" readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="lname">Last Name</label>
+      <input type="text" class="form-control" id="lname" name="lname" value="{{ user['last_name'] }}" readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" class="form-control" id="email" name="email" value="{{ user['email'] }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="location">Location</label>
+      <input type="text" class="form-control" id="location" name="location" value="{{ user['location'] }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="birth_date">Date of Birth</label>
+      <input type="date" class="form-control" id="birth_date" name="birth_date" value="{{ user['birth_date'] }}" readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="profile_image">Profile Picture</label>
+      <input type="file" class="form-control" id="profile_image" name="profile_image">
+      <img src="{{ url_for('uploaded_file', filename=user['profile_image']) }}" alt="Profile_Image" class="img-fluid mt-3" style="max-width: 150px;">
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+      </div>
+      <div class="col-md-6 text-end">
+        <button type="submit" class="btn btn-dark">Save Changes</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="row mt-4">
+    <div class="col-md-12 text-center">
+      <a href="{{ url_for('change_password') }}" class="btn btn-dark">Change Password</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

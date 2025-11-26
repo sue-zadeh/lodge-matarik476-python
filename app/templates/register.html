@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="text-center text-success">Register</h1>
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class=" text-danger fs-5 text-center alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form action="{{ url_for('register') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Username</label>
+                    <input type="text" name="username" class="form-control" id="username" placeholder="Username" required>
+                </div>
+                <div class="form-group">
+                    <label for="first_name"><i class="fas fa-user"></i> First Name</label>
+                    <input type="text" name="first_name" class="form-control" id="first_name" placeholder="First Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="last_name"><i class="fas fa-user"></i> Last Name</label>
+                    <input type="text" name="last_name" class="form-control" id="last_name" placeholder="Last Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" name="password" class="form-control" id="password" placeholder="Password" required pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}">
+                    <small class="form-text text-muted">Password must be at least 8 characters long, and include at least one uppercase letter, one lowercase letter, and one number.</small>
+                </div>
+                <div class="form-group">
+                  <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
+                  <input type="password" name="confirm_password" class="form-control" id="confirm_password" placeholder="Confirm Password" required>
+                          </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" name="email" class="form-control" id="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <label for="date_of_birth"><i class="fas fa-calendar"></i> Date of Birth</label>
+                    <input type="date" name="birth_date" class="form-control" id="birth_date" required min="1900-01-01" max="2023-12-31" pattern="\d{2}/\d{2}/\d{4}">
+                    <small class="form-text text-muted">Date format should be DD/MM/YYYY and year should be between 1900 and current year.</small>
+                  </div>
+                  
+                <div class="form-group">
+                    <label for="location"><i class="fas fa-map-marker-alt"></i> Location</label>
+                    <input type="text" name="location" class="form-control" id="location" placeholder="Location" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile_image"><i class="fas fa-image"></i> Profile Picture</label>
+                    <input type="file" name="profile_image" class="form-control-file" id="profile_image">
+                </div>
+                <div class="form-group">
+                    <label for="role"><i class="fas fa-user-tag"></i> Role</label>
+                    <select name="role" class="form-control" id="role" required>
+                        <option value="member">Member</option>
+                        <option value="moderator">Moderator</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success btn-block mt-4"><i class="fas fa-user-plus"></i> Register</button>
+            </form>
+            <p >Do you have an account? <a class="text-success" href="{{ url_for('login') }}">Login</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+<!--<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Register</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+	</head>
+	<body>
+		<div class="register">
+			<h1>Register</h1>
+			<div class="links">
+				<a href="{{ url_for('login') }}">Login</a>
+				<a href="{{ url_for('register') }}" class="active">Register</a>
+			</div>
+			<form action="{{ url_for('register') }}" method="post" autocomplete="off">
+				<label for="username">
+					<i class="fas fa-user"></i>
+				</label>
+				<input type="text" name="username" placeholder="Username" id="username" required>
+				<label for="password">
+					<i class="fas fa-lock"></i>
+				</label>
+				<input type="password" name="password" placeholder="Password" id="password" required>
+				<label for="email">
+					<i class="fas fa-envelope"></i>
+				</label>
+				<input type="email" name="email" placeholder="Email" id="email" required>
+				<div class="msg">{{ msg }}</div>
+				<input type="submit" value="Register">
+			</form>
+		</div>
+	</body>
+</html>-->
