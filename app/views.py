@@ -289,39 +289,61 @@ def edit_profile():
     cursor, conn = getCursor(dictionary=True)
 
     if request.method == 'POST':
-        email = request.form.get('email')
-        birth_date = request.form.get('birth_date')  # yyyy-mm-dd from <input type="date">
-        file = request.files.get('profile_image')
+        username    = request.form.get('username', '').strip()
+        first_name  = request.form.get('first_name', '').strip()
+        last_name   = request.form.get('last_name', '').strip()
+        email       = request.form.get('email', '').strip()
+        phone       = request.form.get('phone', '').strip()
+        birth_date  = request.form.get('birth_date')       # 'YYYY-MM-DD' from <input type="date">
+        file        = request.files.get('profile_image')
         profile_image = session.get('profile_image', 'default.png')
 
+        # handle photo
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             profile_image = filename
 
+        # (optional) simple username-length check
+        if len(username) < 5:
+            flash('Username must be at least 5 characters.', 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('edit_profile'))
+
+        # update user
         cursor.execute(
             """
             UPDATE users
-            SET email = %s,
-                birth_date = %s,
+            SET username      = %s,
+                first_name    = %s,
+                last_name     = %s,
+                email         = %s,
+                phone         = %s,
+                birth_date    = %s,
                 profile_image = %s
             WHERE user_id = %s
             """,
-            (email, birth_date, profile_image, session['user_id'])
+            (username, first_name, last_name, email, phone,
+             birth_date, profile_image, session['user_id'])
         )
         conn.commit()
         cursor.close()
         conn.close()
+
+        # also update session values if username changed
+        session['username'] = username
+
         flash('Profile updated successfully!', 'success')
         return redirect(url_for('profile'))
 
-    # GET: load data
+    # ---------- GET: load current data ----------
     cursor.execute("SELECT * FROM users WHERE user_id = %s", (session['user_id'],))
     user = cursor.fetchone()
     cursor.close()
     conn.close()
 
-    # for <input type="date"> we need YYYY-MM-DD string
+    # for <input type="date"> we need YYYY-MM-DD
     if user and user.get('birth_date'):
         try:
             user['birth_date'] = user['birth_date'].strftime('%Y-%m-%d')
@@ -329,6 +351,7 @@ def edit_profile():
             pass
 
     return render_template("edit-profile.html", user=user)
+
 
 # ---- Delete profile ---- #
 @app.route('/delete_profile', methods=['POST'])

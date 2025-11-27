@@ -14,25 +14,30 @@
     <div class="mb-3">
       <label for="username" class="form-label">Username</label>
       <input type="text" class="form-control" id="username"
-             name="username" value="{{ user['username'] }}" readonly>
+             name="username" value="{{ user['username'] }}" >
     </div>
 
     <div class="mb-3">
       <label for="fname" class="form-label">First Name</label>
       <input type="text" class="form-control" id="fname"
-             name="fname" value="{{ user['first_name'] }}" readonly>
+             name="fname" value="{{ user['first_name'] }}" >
     </div>
 
     <div class="mb-3">
       <label for="lname" class="form-label">Last Name</label>
       <input type="text" class="form-control" id="lname"
-             name="lname" value="{{ user['last_name'] }}" readonly>
+             name="lname" value="{{ user['last_name'] }}" >
     </div>
 
     <div class="mb-3">
       <label for="email" class="form-label">Email</label>
       <input type="email" class="form-control" id="email"
              name="email" value="{{ user['email'] }}" required>
+    </div>
+<div class="mb-3">
+      <label for="phone" class="form-label">Phone</label>
+      <input type="phone" class="form-control" id="email"
+             name="phone" value="{{ user['phone'] }}" required>
     </div>
 
     <div class="mb-3">
@@ -44,12 +49,13 @@
     <div class="mb-3">
       <label for="profile_image" class="form-label">Profile Picture</label>
       <input type="file" class="form-control" id="profile_image" name="profile_image">
-      {% if user['profile_image'] %}
-        <img src="{{ url_for('uploaded_file', filename=user['profile_image']) }}"
-             alt="Profile image"
-             class="img-fluid mt-3 rounded-circle"
-             style="max-width: 120px;">
-      {% endif %}
+      {% if user.profile_image %}
+  <img src="{{ url_for('static', filename='uploads/' ~ user.profile_image) }}"
+       alt="Profile image"
+       class="img-fluid mt-3 rounded-circle"
+       style="max-width: 120px;">
+{% endif %}
+
     </div>
 
     <div class="row mt-4">
