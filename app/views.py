@@ -92,7 +92,6 @@ def register():
         confirm_password = request.form['confirm_password']
         email = request.form['email']
         birth_date = request.form['birth_date']
-        location = request.form['location']
         phone = request.form.get('phone', '')
         role = request.form.get('role', 'member')
         file = request.files['profile_image']
@@ -137,9 +136,9 @@ def register():
             return redirect(url_for('register'))
 
         # Location only letters, spaces, commas
-        if not re.match(r'^[A-Za-z\s,]+$', location):
-            flash('Location must contain only letters, spaces, and commas.', 'error')
-            return redirect(url_for('register'))
+        # if not re.match(r'^[A-Za-z\s,]+$', location):
+        #     flash('Location must contain only letters, spaces, and commas.', 'error')
+        #     return redirect(url_for('register'))
 
         # Save profile image
         if file and allowed_file(file.filename):
@@ -174,13 +173,13 @@ def register():
             INSERT INTO users (
                 username, first_name, last_name,
                 email, password, phone,
-                birth_date, location, profile_image, role
+                birth_date, profile_image, role
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (username, first_name, last_name,
              email, password_hash, phone,
-             birth_date, location, profile_image, role)
+             birth_date, profile_image, role)
         )
         conn.commit()
         cursor.close()
@@ -196,28 +195,45 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        # Read form data
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
 
+        # Get DB cursor (dictionary=True => RealDictCursor)
         cursor, conn = getCursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+
+        # Column names must match your table: user_id + password
+        cursor.execute(
+            """
+            SELECT user_id, username, password, role
+            FROM users
+            WHERE username = %s AND is_active = TRUE
+            """,
+            (username,)
+        )
         user = cursor.fetchone()
 
-        if user and hashing.check_value(user['password'], password, PASSWORD_SALT):
-            session['user_id'] = user['user_id']
-            session['username'] = user['username']
-            session['role'] = user['role']
-            flash(f'Welcome, {username}!', 'success')
-            cursor.close()
-            conn.close()
-            return redirect(url_for('home'))  # later you can change to community
-
+        # We can close the cursor/connection now
         cursor.close()
         conn.close()
+
+        # Check password using the same salt you used on register
+        if user and hashing.check_value(user['password'], password, PASSWORD_SALT):
+            session.clear()
+            session['user_id'] = user['user_id']
+            session['username'] = user['username']
+            session['role'] = user['role']   # 'member' or 'admin'
+
+            flash(f'Welcome, {user["username"]}!', 'success')
+            return redirect(url_for('home'))  # go to home page
+
+        # If we reach here, login failed
         flash('Invalid username or password.', 'danger')
         return redirect(url_for('login'))
 
+    # GET -> show form
     return render_template("login.html")
+
 
 
 # ---- logout ---- #
@@ -257,7 +273,7 @@ def profile():
         conn.close()
 
     if user:
-        return render_template("profile-user.html", user=user, messages=messages)
+        return render_template("profile-members.html", user=user, messages=messages)
     else:
         return "User not found", 404
 
@@ -273,8 +289,7 @@ def edit_profile():
 
     if request.method == 'POST':
         email = request.form.get('email')
-        location = request.form.get('location')
-        birth_date = request.form.get('birth_date')
+        birth_date = request.form.get('birth_date')  # yyyy-mm-dd from <input type="date">
         file = request.files.get('profile_image')
         profile_image = session.get('profile_image', 'default.png')
 
@@ -286,10 +301,12 @@ def edit_profile():
         cursor.execute(
             """
             UPDATE users
-            SET email = %s, location = %s, birth_date = %s, profile_image = %s
+            SET email = %s,
+                birth_date = %s,
+                profile_image = %s
             WHERE user_id = %s
             """,
-            (email, location, birth_date, profile_image, session['user_id'])
+            (email, birth_date, profile_image, session['user_id'])
         )
         conn.commit()
         cursor.close()
@@ -297,12 +314,20 @@ def edit_profile():
         flash('Profile updated successfully!', 'success')
         return redirect(url_for('profile'))
 
+    # GET: load data
     cursor.execute("SELECT * FROM users WHERE user_id = %s", (session['user_id'],))
     user = cursor.fetchone()
     cursor.close()
     conn.close()
-    return render_template("edit_profile.html", user=user)
 
+    # for <input type="date"> we need YYYY-MM-DD string
+    if user and user.get('birth_date'):
+        try:
+            user['birth_date'] = user['birth_date'].strftime('%Y-%m-%d')
+        except AttributeError:
+            pass
+
+    return render_template("edit_profile.html", user=user)
 
 # ---- Delete profile ---- #
 @app.route('/delete_profile', methods=['POST'])

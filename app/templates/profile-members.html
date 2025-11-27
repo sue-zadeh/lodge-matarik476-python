@@ -1,138 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Compete2Conserve{% endblock %}</title>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
-    <style>
-        .navbar {
-            background-color: #2C5F2D;
-        }
-        .navbar a {
-            color: #FFFFFF;
-        }
-        .cta-button {
-            background-color: #4CAF50;
-            color: #FFFFFF;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        .cta-button:hover {
-            background-color: #45a049;
-        }
-        .home-section {
-            background: url('/static/assets/1.jpg') no-repeat center center;
-            background-size: cover;
-            color: #FFFFFF;
-            text-align: center;
-            padding: 120px 10px;
-            position: relative;
-        }
-        .home-title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
-        }
-        .home-subtitle {
-            font-size: 1.25rem;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-        }
-        .bg-light-green {
-            background-color: #d4edda;
-            padding: 40px 0;
-            width: 100%;
-        }
-        .icon-section {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 20px;
-            background-color: #ffffff; /* White background */
-            padding: 20px;
-            border-radius: 10px;
-        }
-        .icon-item {
-            flex: 1;
-            min-width: 200px;
-            text-align: center;
-        }
-        .icon-item i {
-            color: #4CAF50; /* Light green color for icons */
-            background-color: #d4edda; /* Light green background for the icon itself */
-            padding: 10px;
-            border-radius: 50%;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('home') }}">Alpha</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'home' else '' }}" href="{{ url_for('home') }}">
-                            <i class="fas fa-home"></i> Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'explore' else '' }}" href="{{ url_for('explore') }}">
-                            <i class="fas fa-compass"></i> Explore Competitions
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'create_application' else '' }}" href="{{ url_for('create_application') }}">
-                            <i class="fas fa-plus"></i> Start a Competition
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'my_competitions' else '' }}" href="#">
-                            <i class="fas fa-trophy"></i> My Competition
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'portfolio' else '' }}" href="#">
-                            <i class="fas fa-briefcase"></i> Portfolio
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'login' else '' }}" href="{{ url_for('login') }}">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'register' else '' }}" href="{{ url_for('register') }}">
-                            <i class="fas fa-user-plus"></i> Register
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'text-danger' if request.endpoint == 'logout' else '' }}" href="{{ url_for('logout') }}">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+{% extends 'base.html' %}
 
-    <div class="container my-5">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-          {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show bg-light-green text-danger text-center" role="alert">
-              <b class="fs-2"> {{ message }}</b>
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-          {% endfor %}
-      {% endif %}
-      {% endwith %}
-      {% block content %}
-      {% endblock %}
+{% block title %}Your Profile – Lodge Matariki 476{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-8 col-lg-6">
+    <div class="card bg-dark text-light border-0 shadow-lg">
+      <div class="card-body text-center">
+
+        {# Profile image #}
+        <div class="mb-3">
+          <img
+            src="{% if user.profile_image %}
+                    {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+                 {% else %}
+                    {{ url_for('static', filename='img/logo1.jpg') }}
+                 {% endif %}"
+            alt="Profile picture"
+            class="rounded-circle border border-warning"
+            style="width: 120px; height: 120px; object-fit: cover;"
+          >
+        </div>
+
+        <h2 class="mb-0">
+          {{ user.first_name }} {{ user.last_name }}
+        </h2>
+        <p class="text-warning mb-3">
+          {{ user.role|capitalize }}
+        </p>
+
+        <hr class="border-secondary">
+
+        <div class="text-start">
+          <p class="mb-2">
+            <i class="fas fa-user me-2 text-warning"></i>
+            <strong>Username:</strong> {{ user.username }}
+          </p>
+          <p class="mb-2">
+            <i class="fas fa-user me-2 text-warning"></i>
+            <strong>Password:</strong> {{ user.password }}
+          </p>
+          <p class="mb-2">
+            <i class="fas fa-envelope me-2 text-warning"></i>
+            <strong>Email:</strong> {{ user.email }}
+          </p>
+          {% if user.phone %}
+          <p class="mb-2">
+            <i class="fas fa-phone me-2 text-warning"></i>
+            <strong>Phone:</strong> {{ user.phone }}
+          </p>
+          {% endif %}
+          {% if user.birth_date %}
+          <p class="mb-2">
+            <i class="fas fa-birthday-cake me-2 text-warning"></i>
+            <strong>Date of birth:</strong> {{ user.birth_date }}
+          </p>
+          {% endif %}
+          <p class="mb-0">
+            <i class="fas fa-check-circle me-2 text-warning"></i>
+            <strong>Status:</strong>
+            {% if user.is_active %}Active member{% else %}Inactive{% endif %}
+          </p>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-center gap-3">
+    <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-warning">
+        <i class="fas fa-user-edit"></i> Edit Profile
+    </a>
+    <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning">
+        <i class="fas fa-key"></i> Change Password
+    </a>
+    <a href="{{ url_for('delete_profile') }}" class="btn btn-outline-light">
+        <i class="fas fa-key"></i> Delete Profile
+    </a>
+    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-home"></i> Back to Home
+    </a>
+</div>
+
+      </div>
+    </div>
+
+    {# If later you add messages/announcements per user, they can appear here #}
+    {% if messages %}
+      <div class="card bg-dark text-light border-0 shadow mt-4">
+        <div class="card-body">
+          <h4 class="mb-3">Your lodge messages</h4>
+          <ul class="list-group list-group-flush">
+            {% for msg in messages %}
+              <li class="list-group-item bg-dark text-light border-secondary">
+                {{ msg.content }}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
   </div>
-</body>
-</html>
+</div>
+{% endblock %}

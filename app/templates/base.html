@@ -21,7 +21,7 @@
 
     <style>
         body {
-            background-color: #050c1a;      /* dark navy like Freemasons */
+            background-color: #050c1a;      /* dark navy */
             color: #f5f5f5;
         }
 
@@ -38,7 +38,8 @@
         }
 
         .navbar-brand img {
-            height: 40px;
+            height: 48px;
+            width: auto;
             margin-right: 10px;
         }
 
@@ -67,7 +68,7 @@
             width: 100%;
         }
 
-        .btn-login {
+        .btn-gold-outline {
             border: 1px solid #cfa14a;
             color: #cfa14a;
             padding: 6px 16px;
@@ -75,7 +76,7 @@
             font-weight: 500;
         }
 
-        .btn-login:hover {
+        .btn-gold-outline:hover {
             background-color: #cfa14a;
             color: #050c1a;
         }
@@ -84,13 +85,6 @@
             padding-top: 40px;
             padding-bottom: 40px;
         }
-
-        .hero-card {
-            background: linear-gradient(135deg, #0d192f, #050c1a);
-            border-radius: 20px;
-            padding: 60px 40px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-        }
     </style>
 </head>
 <body>
@@ -98,9 +92,9 @@
     <nav class="navbar navbar-expand-lg navbar-main">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
-                <!-- logo1.jpg in app/static -->
-                <img src="{{ url_for('static', filename='logo1.jpg') }}" alt="Lodge logo">
-                <span>Lodge Matariki 476</span>
+                <img src="{{ url_for('static', filename='img/logo1.jpg') }}"
+                     alt="Lodge logo">
+                <span class="fw-semibold">Lodge Matariki 476</span>
             </a>
 
             <button class="navbar-toggler text-white" type="button"
@@ -111,28 +105,26 @@
             </button>
 
             <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
-                <ul class="navbar-nav me-3">
+                <ul class="navbar-nav ms-auto">
+                    <!-- Public links -->
                     <li class="nav-item">
                         <a class="nav-link nav-link-underline {% if request.endpoint == 'home' %}active{% endif %}"
                            href="{{ url_for('home') }}">
                             Home
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}"
                            href="#">
                             About Us
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}"
                            href="#">
                             Our Story
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link nav-link-underline {% if request.endpoint == 'contact' %}active{% endif %}"
                            href="#">
@@ -140,7 +132,8 @@
                         </a>
                     </li>
 
-                    {% if 'user_id' in session %}
+                    {% if session.get('user_id') %}
+                        <!-- Logged-in member/admin links -->
                         <li class="nav-item">
                             <a class="nav-link nav-link-underline {% if request.endpoint == 'profile' %}active{% endif %}"
                                href="{{ url_for('profile') }}">
@@ -152,26 +145,32 @@
                         <li class="nav-item">
                             <a class="nav-link nav-link-underline {% if request.endpoint == 'admin_dashboard' %}active{% endif %}"
                                href="#">
-                                Admin
+                                Admin Dashboard
                             </a>
                         </li>
                         {% endif %}
+
+                        <li class="nav-item ms-3">
+                            <a class="btn btn-gold-outline" href="{{ url_for('logout') }}">
+                                Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <!-- Visitor links -->
+                        <li class="nav-item ms-3">
+                            <a class="btn btn-gold-outline"
+                               href="{{ url_for('login') }}">
+                                Members Login
+                            </a>
+                        </li>
+                        <li class="nav-item ms-2">
+                            <a class="btn btn-gold-outline"
+                               href="{{ url_for('register') }}">
+                                Join
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
-
-                <!-- Right side buttons -->
-                {% if 'user_id' in session %}
-                    <a href="{{ url_for('logout') }}" class="btn btn-login">
-                        Logout
-                    </a>
-                {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-login me-2">
-                        Members Login
-                    </a>
-                    <a href="{{ url_for('register') }}" class="btn btn-login">
-                        Join
-                    </a>
-                {% endif %}
             </div>
         </div>
     </nav>
@@ -179,13 +178,13 @@
     <!-- FLASH + PAGE CONTENT -->
     <main class="container main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} text-center" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} text-center" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
