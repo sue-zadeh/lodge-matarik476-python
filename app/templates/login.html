@@ -21,10 +21,15 @@
               <label for="username" class="form-label"><i class="fas fa-user"></i>Username</label>
               <input type="text" class="form-control" id="username" name="username" value="{% if registered %}{{username}}{% endif %}" required>
            </div>
-           <div class="mb-3">
-              <label for="password" class="form-label"><i class="fas fa-lock"></i>Password</label>
-              <input type="password" class="form-control" id="password" name="password" required>
-            </div>
+<div class="mb-3 position-relative">
+  <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
+  <input type="password" class="form-control" id="password" name="password" required>
+  <span onclick="togglePassword('password', this)"
+        style="position:absolute; right:15px; top:38px; cursor:pointer;">
+    <i class="fas fa-eye text-secondary"></i>
+  </span>
+</div>
+          
 
             {% if toLogin and not registered %}
             <div class="alert alert-danger"   role="alert">

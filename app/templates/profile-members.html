@@ -9,18 +9,26 @@
       <div class="card-body text-center">
 
         {# Profile image #}
-        <div class="mb-3">
-          <img
-            src="{% if user.profile_image %}
-                    {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
-                 {% else %}
-                    {{ url_for('static', filename='img/logo1.jpg') }}
-                 {% endif %}"
-            alt="Profile picture"
-            class="rounded-circle border border-warning"
-            style="width: 120px; height: 120px; object-fit: cover;"
-          >
-        </div>
+        <div class="text-center mb-4">
+  <div class="position-relative d-inline-block">
+    <img
+      src="{% if user.profile_image %}
+              {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+           {% else %}
+              {{ url_for('static', filename='img/logo1.jpg') }}
+           {% endif %}"
+      alt="Profile picture"
+      class="rounded-circle border border-warning shadow"
+      style="width: 140px; height: 140px; object-fit: cover;"
+    >
+    <!-- Pen icon sitting on the bottom-right edge of the circle -->
+    <a href="{{ url_for('edit_profile') }}"
+       class="position-absolute bg-warning rounded-circle p-2 shadow"
+       style="right: -4px; bottom: -4px;">
+      <i class="fas fa-pen text-dark"></i>
+    </a>
+  </div>
+</div>
 
         <h2 class="mb-0">
           {{ user.first_name }} {{ user.last_name }}
@@ -36,10 +44,7 @@
             <i class="fas fa-user me-2 text-warning"></i>
             <strong>Username:</strong> {{ user.username }}
           </p>
-          <p class="mb-2">
-            <i class="fas fa-user me-2 text-warning"></i>
-            <strong>Password:</strong> {{ user.password }}
-          </p>
+          
           <p class="mb-2">
             <i class="fas fa-envelope me-2 text-warning"></i>
             <strong>Email:</strong> {{ user.email }}
@@ -70,9 +75,10 @@
     <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning">
         <i class="fas fa-key"></i> Change Password
     </a>
-    <a href="{{ url_for('delete_profile') }}" class="btn btn-outline-light">
-        <i class="fas fa-key"></i> Delete Profile
-    </a>
+    <form action="{{ url_for('delete_profile') }}" method="POST" onsubmit="return confirm('Are you sure?');">
+    <button class="btn btn-outline-danger">Delete Profile</button>
+</form>
+
     <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">
         <i class="fas fa-home"></i> Back to Home
     </a>

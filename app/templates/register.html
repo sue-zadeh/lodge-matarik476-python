@@ -105,7 +105,7 @@
         </div>
 
         <!-- Password -->
-        <div class="form-group mb-3">
+        <div class="form-group mb-3 position-relative">
           <label for="password"><i class="fas fa-lock"></i> Password</label>
           <input
             type="password"
@@ -116,13 +116,17 @@
             required
             pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
           >
-          <small class="form-text text-muted text-light">
+          <span onclick="togglePassword('password')"
+               style="position:absolute; right:15px; top:38px; cursor:pointer;">
+               <i class="fas fa-eye text-secondary"></i>
+              </span>
+          <small class="form-text  text-light">
             At least 8 characters, with upper, lower, and a number.
           </small>
         </div>
 
         <!-- Confirm Password -->
-        <div class="form-group mb-3">
+        <div class="form-group mb-3 position-relative">
           <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
           <input
             type="password"
@@ -132,6 +136,10 @@
             placeholder="Confirm Password"
             required
           >
+          <span onclick="togglePassword('password')"
+               style="position:absolute; right:15px; top:38px; cursor:pointer;">
+               <i class="fas fa-eye text-secondary"></i>
+              </span>
         </div>
 
         <!-- Profile picture -->

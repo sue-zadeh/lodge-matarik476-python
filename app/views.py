@@ -145,6 +145,7 @@ def register():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             profile_image = filename
+            session['profile_image'] = filename   
         else:
             flash('File not allowed', 'error')
             return redirect(url_for('register'))
@@ -327,7 +328,7 @@ def edit_profile():
         except AttributeError:
             pass
 
-    return render_template("edit_profile.html", user=user)
+    return render_template("edit-profile.html", user=user)
 
 # ---- Delete profile ---- #
 @app.route('/delete_profile', methods=['POST'])
