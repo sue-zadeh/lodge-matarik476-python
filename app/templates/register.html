@@ -120,9 +120,9 @@
            style="position:absolute; right:15px; top:38px; cursor:pointer;">
           <i class="fas fa-eye text-secondary"></i>
          </span>
-          <small class="form-text  text-light">
+          <p class="card-text small">
             At least 8 characters, with upper, lower, and a number.
-          </small>
+          </p>
         </div>
 
         <!-- Confirm Password -->
@@ -154,14 +154,15 @@
         </div>
 
         <!-- Role -->
+  {% if session.get('role') == 'admin' %}
         <div class="form-group mb-4">
-          <label for="role"><i class="fas fa-user-tag"></i> Role</label>
-          <select name="role" class="form-control" id="role" required>
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-
+          <label class="form-label">Role</label>
+           <select name="role" class="form-select">
+           <option value="member" selected>Member</option>
+           <option value="admin">Admin</option>
+        </select>
+      </div>
+{% endif %}
         <button type="submit" class="btn btn-success btn-block mt-2">
           <i class="fas fa-user-plus"></i> Register
         </button>

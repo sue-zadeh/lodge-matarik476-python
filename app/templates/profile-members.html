@@ -10,24 +10,34 @@
 
         {# Profile image #}
         <div class="text-center mb-4">
-  <div class="position-relative d-inline-block">
-    <img
-      src="{% if user.profile_image %}
-              {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
-           {% else %}
-              {{ url_for('static', filename='img/logo1.jpg') }}
-           {% endif %}"
-      alt="Profile picture"
-      class="rounded-circle border border-warning shadow"
-      style="width: 140px; height: 140px; object-fit: cover;"
-    >
-    <!-- Pen icon sitting on the bottom-right edge of the circle -->
-    <a href="{{ url_for('edit_profile') }}"
+<div class="position-relative d-inline-block">
+  
+  <img
+    src="{% if user.profile_image %}
+            {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+         {% else %}
+            {{ url_for('static', filename='img/logo1.jpg') }}
+         {% endif %}"
+    alt="Profile picture"
+    class="rounded-circle border border-warning shadow"
+    style="width: 150px; height: 150px; object-fit: cover;"
+  >
+
+  <!-- Pen Icon -->
+  <a href="{{ url_for('edit_profile') }}"
+     class="position-absolute bg-warning rounded-circle p-2 shadow hover-lift"
+     style="bottom: 5px; right: 5px;">
+     <i class="fas fa-pen text-dark"></i>
+  </a>
+
+</div>
+
+    <!-- <a href="{{ url_for('edit_profile') }}"
        class="position-absolute bg-warning rounded-circle p-2 shadow"
        style="right: -4px; bottom: -4px;">
       <i class="fas fa-pen text-dark"></i>
     </a>
-  </div>
+  </div> -->
 </div>
 
         <h2 class="mb-0">

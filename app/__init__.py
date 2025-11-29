@@ -9,3 +9,4 @@ app.secret_key = '2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affd
 
 # import routes so they register on the app
 from app import views
+from app import admins_dashboard

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Member Home{% endblock %}
+
+{% block content %}
+
+<section class="container mt-4">
+  <div class="d-flex align-items-center p-3 rounded-3 bg-dark bg-opacity-50 shadow-sm">
+    <img
+      src="{% if user.profile_image %}
+              {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+           {% else %}
+              {{ url_for('static', filename='img/logo1.jpg') }}
+           {% endif %}"
+      alt="Avatar"
+      class="rounded-circle border border-warning me-3"
+      style="width:64px;height:64px;object-fit:cover;"
+    >
+    <div>
+      <p class="mb-1 text-muted small">Welcome back,</p>
+      <h4 class="mb-0 text-light">Welcome {{ user.first_name }} {{ user.last_name }}</h4>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+

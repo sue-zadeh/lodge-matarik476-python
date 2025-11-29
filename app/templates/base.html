@@ -85,6 +85,15 @@
             padding-top: 40px;
             padding-bottom: 40px;
         }
+
+          .hover-lift {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  }
+
     </style>
 </head>
 <body>
@@ -105,72 +114,90 @@
             </button>
 
             <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
-                <ul class="navbar-nav ms-auto">
-                    <!-- Public links -->
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-underline {% if request.endpoint == 'home' %}active{% endif %}"
-                           href="{{ url_for('home') }}">
-                            Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}"
-                           href="#">
-                            About Us
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}"
-                           href="#">
-                            Our Story
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-underline {% if request.endpoint == 'contact' %}active{% endif %}"
-                           href="#">
-                            Contact
-                        </a>
-                    </li>
+        <ul class="navbar-nav ms-auto">
 
-                    {% if session.get('user_id') %}
-                        <!-- Logged-in member/admin links -->
-                        <li class="nav-item">
-                            <a class="nav-link nav-link-underline {% if request.endpoint == 'profile' %}active{% endif %}"
-                               href="{{ url_for('profile') }}">
-                                Profile
-                            </a>
-                        </li>
+  {# --- visitor (not logged in) --- #}
+  {% if not session.get('user_id') %}
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">About Us</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Our Story</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Contact Us</a>
+    </li>
 
-                        {% if session.get('role') == 'admin' %}
-                        <li class="nav-item">
-                            <a class="nav-link nav-link-underline {% if request.endpoint == 'admin_dashboard' %}active{% endif %}"
-                               href="#">
-                                Admin Dashboard
-                            </a>
-                        </li>
-                        {% endif %}
+    <li class="nav-item ms-3">
+      <a class="btn btn-outline-warning" href="{{ url_for('login') }}">Members Login</a>
+    </li>
+    <li class="nav-item ms-2">
+      <a class="btn btn-outline-warning" href="{{ url_for('register') }}">Join</a>
+    </li>
 
-                        <li class="nav-item ms-3">
-                            <a class="btn btn-gold-outline" href="{{ url_for('logout') }}">
-                                Logout
-                            </a>
-                        </li>
-                    {% else %}
-                        <!-- Visitor links -->
-                        <li class="nav-item ms-3">
-                            <a class="btn btn-gold-outline"
-                               href="{{ url_for('login') }}">
-                                Members Login
-                            </a>
-                        </li>
-                        <li class="nav-item ms-2">
-                            <a class="btn btn-gold-outline"
-                               href="{{ url_for('register') }}">
-                                Join
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
+  {# --- member --- #}
+  {% elif session.get('role') == 'member' %}
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('member_home') }}">Home</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Our Story</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Calendar</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Announcements</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Files</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+    </li>
+
+    <li class="nav-item ms-3">
+      <a class="btn btn-outline-warning" href="{{ url_for('logout') }}">Logout</a>
+    </li>
+
+  {# --- admin --- #}
+  {% elif session.get('role') == 'admin' %}
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('admin_home') }}">Home</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Calendar</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Announcements</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#">Files</a>
+    </li>
+    <li class="nav-item dropdown">
+      <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+        Admin
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="">Dashboard</a></li>
+<li><a class="dropdown-item" href="#">Manage Members</a></li>
+<li><a class="dropdown-item" href="#">Settings</a></li>
+<li><a class="dropdown-item" href="#">Create Announcement</a></li>
+<li><a class="dropdown-item" href="#">Upload File</a></li>
+
+      </ul>
+    </li>
+
+    <li class="nav-item ms-3">
+      <a class="btn btn-outline-warning" href="{{ url_for('logout') }}">Logout</a>
+    </li>
+  {% endif %}
+
+</ul>
+
             </div>
         </div>
     </nav>
@@ -180,7 +207,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} text-center" role="alert">
+                    <div class="alert alert-{{ category }} text-center alert-auto-hide" role="alert">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -216,6 +243,47 @@
   }
 </script>
 
+<!--message auto-hide after 10 second -->
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    const alerts = document.querySelectorAll('.alert-auto-hide');
+    if (!alerts.length) return;
+
+    setTimeout(function () {
+      alerts.forEach(function (el) {
+        // Use Bootstrap’s JS to close if available
+        if (window.bootstrap && bootstrap.Alert) {
+          const alert = bootstrap.Alert.getOrCreateInstance(el);
+          alert.close();
+        } else {
+          el.style.display = 'none';
+        }
+      });
+    }, 10000); // 10 seconds
+  });
+</script>
+
+<!--Flask sessions + inactivity timer-if there is no mouse/keyboard activity for 10 minutes, redirect to /logout-->
+
+<script>
+  (function () {
+    let timer;
+    const TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
+    function resetTimer() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () {
+        window.location.href = "{{ url_for('logout') }}";
+      }, TIMEOUT);
+    }
+
+    ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(function (evt) {
+      window.addEventListener(evt, resetTimer);
+    });
+
+    resetTimer();
+  })();
+</script>
 
 </body>
 </html>

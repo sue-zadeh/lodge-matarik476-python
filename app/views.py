@@ -9,6 +9,9 @@ import psycopg2.extras
 from datetime import datetime
 from app import app
 from app.connect import get_db  # our PostgreSQL connection
+from datetime import timedelta
+
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 PASSWORD_SALT = '1234abcd'
 
@@ -17,6 +20,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 
 # ---------- DB helper ----------
@@ -82,6 +86,7 @@ def home():
 
 
 # ------ register form ------- #
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -93,33 +98,38 @@ def register():
         email = request.form['email']
         birth_date = request.form['birth_date']
         phone = request.form.get('phone', '')
-        role = request.form.get('role', 'member')
+
+        # ---- role logic ----#
+        
+        # default
+        role = 'member'
+
+        # only current admins can set role via form
+        if session.get('role') == 'admin':
+            role_from_form = request.form.get('role', 'member')
+            if role_from_form in ['admin', 'member']:
+                role = role_from_form
+
         file = request.files['profile_image']
         profile_image = None
 
         # ---- basic validations ----
-
-        # Passwords match
         if password != confirm_password:
             flash('Passwords do not match!', 'error')
             return redirect(url_for('register'))
 
-        # Username length
         if len(username) < 5:
             flash('Username must be at least 5 characters long.', 'error')
             return redirect(url_for('register'))
 
-        # Simple email check
         if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
             flash('Invalid email format.', 'error')
             return redirect(url_for('register'))
 
-        # Phone: only digits, + and space
         if phone and not re.match(r'^[0-9+ ]*$', phone):
             flash('Phone must contain digits and + only.', 'error')
             return redirect(url_for('register'))
 
-        # Password strength
         if (len(password) < 8 or
             not re.search(r'[A-Z]', password) or
             not re.search(r'[a-z]', password) or
@@ -127,7 +137,6 @@ def register():
             flash('Password must be at least 8 characters and include upper, lower and number.', 'error')
             return redirect(url_for('register'))
 
-        # Parse date
         try:
             birth_date_obj = datetime.strptime(birth_date, '%Y-%m-%d')
             birth_date = birth_date_obj.strftime('%Y-%m-%d')
@@ -135,17 +144,12 @@ def register():
             flash('Invalid date format. Use YYYY-MM-DD', 'error')
             return redirect(url_for('register'))
 
-        # Location only letters, spaces, commas
-        # if not re.match(r'^[A-Za-z\s,]+$', location):
-        #     flash('Location must contain only letters, spaces, and commas.', 'error')
-        #     return redirect(url_for('register'))
-
         # Save profile image
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             profile_image = filename
-            session['profile_image'] = filename   
+            session['profile_image'] = filename
         else:
             flash('File not allowed', 'error')
             return redirect(url_for('register'))
@@ -155,7 +159,6 @@ def register():
             flash('Database connection error', 'error')
             return redirect(url_for('register'))
 
-        # Check if username already exists
         cursor.execute("SELECT 1 FROM users WHERE username = %s", (username,))
         account = cursor.fetchone()
 
@@ -165,10 +168,8 @@ def register():
             conn.close()
             return redirect(url_for('register'))
 
-        # Hash the password
         password_hash = hashing.hash_value(password, PASSWORD_SALT)
 
-        # Insert the new user
         cursor.execute(
             """
             INSERT INTO users (
@@ -191,51 +192,92 @@ def register():
 
     return render_template("register.html")
 
+#-------------- Login -------------#
 
-# ----- login ------ #
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Read form data
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
 
-        # Get DB cursor (dictionary=True => RealDictCursor)
         cursor, conn = getCursor(dictionary=True)
-
-        # Column names must match your table: user_id + password
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT user_id, username, password, role
             FROM users
             WHERE username = %s AND is_active = TRUE
-            """,
-            (username,)
-        )
+        """, (username,))
         user = cursor.fetchone()
-
-        # We can close the cursor/connection now
         cursor.close()
         conn.close()
 
-        # Check password using the same salt you used on register
         if user and hashing.check_value(user['password'], password, PASSWORD_SALT):
-            session.clear()
+            session.permanent = True   # ← needed for timeout
             session['user_id'] = user['user_id']
             session['username'] = user['username']
-            session['role'] = user['role']   # 'member' or 'admin'
+            session['role'] = user['role']
 
             flash(f'Welcome, {user["username"]}!', 'success')
-            return redirect(url_for('home'))  # go to home page
 
-        # If we reach here, login failed
+            # Role-based homepage
+            if user['role'] == 'admin':
+                return redirect(url_for('admin_home'))
+            elif user['role'] == 'member':
+                return redirect(url_for('member_home'))
+            else:
+                return redirect(url_for('home'))
+
         flash('Invalid username or password.', 'danger')
         return redirect(url_for('login'))
 
-    # GET -> show form
     return render_template("login.html")
 
 
+# ------ Routes for home_members and home_admins ------ #
+
+@app.route('/member/home')
+def member_home():
+    # only members can see this page
+    if session.get('role') != 'member':
+        return redirect(url_for('login'))
+
+    user = None
+    user_id = session.get('user_id')
+
+    if user_id:
+        cursor, conn = getCursor(dictionary=True)
+        cursor.execute(
+            "SELECT user_id, username, first_name, last_name, profile_image "
+            "FROM users WHERE user_id = %s",
+            (user_id,)
+        )
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+    return render_template('home_member.html', user=user)
+
+
+@app.route('/admin/home')
+def admin_home():
+    # only admins can see this page
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    user = None
+    user_id = session.get('user_id')
+
+    if user_id:
+        cursor, conn = getCursor(dictionary=True)
+        cursor.execute(
+            "SELECT user_id, username, first_name, last_name, profile_image "
+            "FROM users WHERE user_id = %s",
+            (user_id,)
+        )
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+    return render_template('home_admin.html', user=user)
 
 # ---- logout ---- #
 @app.route('/logout')
@@ -277,7 +319,7 @@ def profile():
         return render_template("profile-members.html", user=user, messages=messages)
     else:
         return "User not found", 404
-
+      
 
 # ---- Edit Profile ---- #
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -288,69 +330,99 @@ def edit_profile():
 
     cursor, conn = getCursor(dictionary=True)
 
-    if request.method == 'POST':
-        username    = request.form.get('username', '').strip()
-        first_name  = request.form.get('first_name', '').strip()
-        last_name   = request.form.get('last_name', '').strip()
-        email       = request.form.get('email', '').strip()
-        phone       = request.form.get('phone', '').strip()
-        birth_date  = request.form.get('birth_date')       # 'YYYY-MM-DD' from <input type="date">
-        file        = request.files.get('profile_image')
-        profile_image = session.get('profile_image', 'default.png')
+    # Always load current user first
+    cursor.execute("SELECT * FROM users WHERE user_id = %s", (session['user_id'],))
+    user = cursor.fetchone()
 
-        # handle photo
+    if not user:
+        cursor.close()
+        conn.close()
+        flash('User not found.', 'danger')
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        # names must match your form fields
+        username    = request.form.get('username')
+        first_name  = request.form.get('fname')
+        last_name   = request.form.get('lname')
+        email       = request.form.get('email')
+        phone       = request.form.get('phone')
+        birth_date  = request.form.get('birth_date')   # yyyy-mm-dd from input[type=date]
+
+        file = request.files.get('profile_image')
+
+        # default: keep existing image
+        profile_image = user.get('profile_image')
+
+        # if a new file uploaded, save and replace
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             profile_image = filename
 
-        # (optional) simple username-length check
-        if len(username) < 5:
-            flash('Username must be at least 5 characters.', 'error')
-            cursor.close()
-            conn.close()
-            return redirect(url_for('edit_profile'))
-
-        # update user
-        cursor.execute(
-            """
+        cursor.execute("""
             UPDATE users
-            SET username      = %s,
-                first_name    = %s,
-                last_name     = %s,
-                email         = %s,
-                phone         = %s,
-                birth_date    = %s,
+            SET username = %s,
+                first_name = %s,
+                last_name = %s,
+                email = %s,
+                phone = %s,
+                birth_date = %s,
                 profile_image = %s
             WHERE user_id = %s
-            """,
-            (username, first_name, last_name, email, phone,
-             birth_date, profile_image, session['user_id'])
-        )
+        """, (
+            username,
+            first_name,
+            last_name,
+            email,
+            phone,
+            birth_date,
+            profile_image,
+            session['user_id']
+        ))
         conn.commit()
         cursor.close()
         conn.close()
 
-        # also update session values if username changed
-        session['username'] = username
-
         flash('Profile updated successfully!', 'success')
         return redirect(url_for('profile'))
 
-    # ---------- GET: load current data ----------
-    cursor.execute("SELECT * FROM users WHERE user_id = %s", (session['user_id'],))
-    user = cursor.fetchone()
-    cursor.close()
-    conn.close()
-
-    # for <input type="date"> we need YYYY-MM-DD
-    if user and user.get('birth_date'):
+    # GET: prepare data for the form
+    if user.get('birth_date'):
         try:
             user['birth_date'] = user['birth_date'].strftime('%Y-%m-%d')
         except AttributeError:
             pass
 
+    cursor.close()
+    conn.close()
     return render_template("edit-profile.html", user=user)
+
+
+#------- Change Picture in the Profile --------------------#
+@app.route('/update_profile_image', methods=['POST'])
+def update_profile_image():
+    if 'user_id' not in session:
+        flash('Please log in.', 'error')
+        return redirect(url_for('login'))
+
+    file = request.files.get('profile_image')
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        cursor, conn = getCursor()
+        cursor.execute(
+            "UPDATE users SET profile_image = %s WHERE user_id = %s",
+            (filename, session['user_id'])
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash('Profile photo updated.', 'success')
+
+    return redirect(url_for('profile'))
 
 
 # ---- Delete profile ---- #

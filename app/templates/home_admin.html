@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="text-center text-success mb-4 mt-4">
+    Admin Dashboard
+  </h1>
+
+  <p class="text-center mb-4">
+    Welcome, {{ session.get('username') }}
+  </p>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light hover-lift">
+          <div class="card-body text-center">
+            <i class="fas fa-users fa-2x mb-2"></i>
+            <h5 class="card-title">Manage Members</h5>
+            <p class="card-text small">View, edit and add lodge members.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light hover-lift">
+          <div class="card-body text-center">
+            <i class="fas fa-bullhorn fa-2x mb-2"></i>
+            <h5 class="card-title">Announcements</h5>
+            <p class="card-text small">Post news for members.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light hover-lift">
+          <div class="card-body text-center">
+            <i class="fas fa-file-upload fa-2x mb-2"></i>
+            <h5 class="card-title">Files</h5>
+            <p class="card-text small">Upload minutes, documents, etc.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="row g-4">
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light hover-lift">
+          <div class="card-body text-center">
+            <i class="fas fa-users fa-2x mb-2"></i>
+            <h5 class="card-title">Register a new Member / Admin</h5>
+            <p class="card-text small"></p>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title text-warning">Upload Files</h5>
+            <p class="card-text text-muted small">
+              Share minutes, summons, and resources with members.
+            </p>
+            <div class="text-end">
+              <i class="fas fa-file-upload fa-2x text-warning"></i>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title text-warning">Manage Events / Calendar</h5>
+            <p class="card-text text-muted small">
+              Add or update meetings and special nights.
+            </p>
+            <div class="text-end">
+              <i class="fas fa-calendar-alt fa-2x text-warning"></i>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+  </div>
+
+{% endblock %}
