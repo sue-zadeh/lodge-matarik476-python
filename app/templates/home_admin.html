@@ -4,6 +4,35 @@
 
 {% block content %}
 <div class="container">
+
+  <!-- Welcome card -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift">
+        <img
+          src="{% if user.profile_image %}
+                  {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+               {% else %}
+                  {{ url_for('static', filename='img/logo1.jpg') }}
+               {% endif %}"
+          alt="Admin avatar"
+          class="rounded-circle border border-warning me-3"
+          style="width:72px;height:72px;object-fit:cover;"
+        >
+        <div>
+          <p class="mb-1 text-muted small">Welcome back,</p>
+          <h3 class="mb-1 text-light">
+            Welcome {{ user.first_name }} {{ user.last_name }}
+          </h3>
+          <span class="badge bg-warning text-dark">
+            Admin
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard title -->
   <h1 class="text-center text-success mb-4 mt-4">
     Admin Dashboard
   </h1>
@@ -12,7 +41,9 @@
     Welcome, {{ session.get('username') }}
   </p>
 
+  <!-- Admin tiles -->
   <div class="row g-4">
+
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark text-light hover-lift">
@@ -24,6 +55,7 @@
         </div>
       </a>
     </div>
+
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark text-light hover-lift">
@@ -48,19 +80,28 @@
       </a>
     </div>
 
-    <div class="row g-4">
-    <div class="col-md-4">
-      <a href="#" class="text-decoration-none">
-        <div class="card bg-dark text-light hover-lift">
-          <div class="card-body text-center">
-            <i class="fas fa-users fa-2x mb-2"></i>
-            <h5 class="card-title">Register a new Member / Admin</h5>
-            <p class="card-text small"></p>
+  </div>
+
+  <div class="row g-4 mt-3">
+
+
+<div class="col-md-4">
+      <a href="{{ url_for('register') }}" class="text-decoration-none">
+        <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title text-warning shadow">Register a new Member / Admin</h5>
+            <p class="card-text text-muted small">
+              Share minutes, summons, and resources with members.
+            </p>
+            <div class="text-end">
+            <i class="fas fa-user-plus fa-2x mb-2"></i>
+            </div>
           </div>
         </div>
       </a>
     </div>
-    
+
+   
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
@@ -76,7 +117,7 @@
         </div>
       </a>
     </div>
-    
+
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
@@ -92,7 +133,8 @@
         </div>
       </a>
     </div>
-  </div>
+
   </div>
 
+</div>
 {% endblock %}

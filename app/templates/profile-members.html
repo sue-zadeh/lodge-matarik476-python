@@ -11,7 +11,6 @@
         {# Profile image #}
         <div class="text-center mb-4">
 <div class="position-relative d-inline-block">
-  
   <img
     src="{% if user.profile_image %}
             {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
@@ -23,14 +22,28 @@
     style="width: 150px; height: 150px; object-fit: cover;"
   >
 
-  <!-- Pen Icon -->
-  <a href="{{ url_for('edit_profile') }}"
-     class="position-absolute bg-warning rounded-circle p-2 shadow hover-lift"
-     style="bottom: 5px; right: 5px;">
-     <i class="fas fa-pen text-dark"></i>
-  </a>
-
+  {# Pen button – opens file chooser, does NOT go to edit_profile #}
+  <button type="button"
+          class="position-absolute bg-warning rounded-circle p-2 shadow hover-lift border-0"
+          style="bottom: 5px; right: 5px;"
+          onclick="document.getElementById('profileImageInput').click();">
+    <i class="fas fa-pen text-dark"></i>
+  </button>
 </div>
+
+{# Hidden form that actually uploads the new picture #}
+<form id="profileImageForm"
+      action="{{ url_for('update_profile_image') }}"
+      method="POST"
+      enctype="multipart/form-data"
+      class="d-none">
+  <input type="file"
+         name="profile_image"
+         id="profileImageInput"
+         accept="image/*"
+         onchange="document.getElementById('profileImageForm').submit();">
+</form>
+
 
     <!-- <a href="{{ url_for('edit_profile') }}"
        class="position-absolute bg-warning rounded-circle p-2 shadow"

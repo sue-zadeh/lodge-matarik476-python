@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+  AOS.init({ duration: 800, once: true });
+</script>
+
     <title>{% block title %}Lodge Matariki 476{% endblock %}</title>
 
     <!-- Bootstrap 5 CSS -->
@@ -29,6 +34,16 @@
             background-color: #050c1a;
             border-bottom: 1px solid #cfa14a;   /* gold line */
         }
+        .navbar {
+  transition: all .3s ease;
+}
+
+.navbar.scrolled {
+  background-color: rgba(0,0,0,0.85) !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+}
+
 
         .navbar-brand,
         .navbar-nav .nav-link {
@@ -86,15 +101,71 @@
             padding-bottom: 40px;
         }
 
-          .hover-lift {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        .hover-lift {
+         transition: transform 0.15s ease, box-shadow 0.15s ease;
+       }
+       .hover-lift:hover {
+         transform: translateY(-2px);
+         box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+       }
+
+  /* ===== Member hero section ===== */
+  .hero-section {
+    position: relative;
+    min-height: 60vh;          /* smaller than before so content below is visible */
+    padding: 60px 0;           /* space for the text */
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
   }
 
-    </style>
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);  /* darken image so text pops */
+    z-index: 1;
+  }
+
+  .hero-section .container {
+    position: relative;
+    z-index: 2;                 /* text above the dark overlay & image */
+  }
+
+  /* Cards on member home */
+  .card-link {
+    background-color: #050c1a;
+    border: 1px solid rgba(207,161,74,0.3);
+    border-radius: 0.75rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .card-link:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    border-color: #cfa14a;
+  }
+
+
+   .hero-section {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    /* OLD: background: rgba(0, 0, 0, 0.55); */
+    background: rgba(0, 0, 0, 0.30);  /* ← lighter overlay */
+  }
+
+
+  .hero-section > .container {
+    position: relative;
+    z-index: 1;  /* put text above the overlay */
+  }
+
+  
+</style>
 </head>
 <body>
     <!-- NAVBAR -->
@@ -167,6 +238,9 @@
   {% elif session.get('role') == 'admin' %}
     <li class="nav-item">
       <a class="nav-link" href="{{ url_for('admin_home') }}">Home</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="#">Calendar</a>
@@ -283,6 +357,17 @@
 
     resetTimer();
   })();
+</script>
+<!--navbar scroll animation-->
+<script>
+window.addEventListener('scroll', function() {
+  const nav = document.querySelector('.navbar');
+  if (window.scrollY > 50) {
+      nav.classList.add('scrolled');
+  } else {
+      nav.classList.remove('scrolled');
+  }
+});
 </script>
 
 </body>

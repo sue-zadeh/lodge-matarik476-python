@@ -9,7 +9,7 @@
       <h1 class="text-center text-success mt-5">Register</h1>
 
       {# Flash messages #}
-      {% with messages = get_flashed_messages(with_categories=true) %}
+      <!--{% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
             <div class="text-danger fs-5 text-center alert alert-{{ category }}">
@@ -17,7 +17,7 @@
             </div>
           {% endfor %}
         {% endif %}
-      {% endwith %}
+      {% endwith %}-->
 
       <form action="{{ url_for('register') }}" method="post" enctype="multipart/form-data" class="mt-4">
         <!-- Username -->
