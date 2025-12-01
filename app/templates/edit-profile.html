@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container">
-  <h1 class="text-center text-success mb-4 mt-4">Manage My Profile</h1>
+  <h1 class="text-center text-success mb-4 mt-4" data-aos="fade-right">Manage My Profile</h1>
 
   <form action="{{ url_for('edit_profile') }}" method="POST"
         enctype="multipart/form-data"
@@ -12,42 +12,42 @@
         style="max-width: 600px; margin: 0 auto;">
     
     <div class="mb-3">
-      <label for="username" class="form-label">Username</label>
+      <label for="username" class="form-label" data-aos="fade-right">Username</label>
       <input type="text" class="form-control" id="username"
              name="username" value="{{ user['username'] }}" >
     </div>
 
     <div class="mb-3">
-      <label for="fname" class="form-label">First Name</label>
+      <label for="fname" class="form-label" data-aos="fade-left">First Name</label>
       <input type="text" class="form-control" id="fname"
              name="fname" value="{{ user['first_name'] }}" >
     </div>
 
     <div class="mb-3">
-      <label for="lname" class="form-label">Last Name</label>
+      <label for="lname" class="form-label" data-aos="fade-right">Last Name</label>
       <input type="text" class="form-control" id="lname"
              name="lname" value="{{ user['last_name'] }}" >
     </div>
 
     <div class="mb-3">
-      <label for="email" class="form-label">Email</label>
+      <label for="email" class="form-label" data-aos="fade-left">Email</label>
       <input type="email" class="form-control" id="email"
              name="email" value="{{ user['email'] }}" required>
     </div>
 <div class="mb-3">
-  <label for="phone" class="form-label">Phone</label>
+  <label for="phone" class="form-label" data-aos="fade-right">Phone</label>
   <input type="text" class="form-control" id="phone"
          name="phone" value="{{ user['phone'] }}">
 </div>
 
     <div class="mb-3">
-      <label for="birth_date" class="form-label">Date of Birth</label>
+      <label for="birth_date" class="form-label" data-aos="fade-left">Date of Birth</label>
       <input type="date" class="form-control" id="birth_date"
              name="birth_date" value="{{ user['birth_date'] }}">
     </div>
 
     <div class="mb-3">
-      <label for="profile_image" class="form-label">Profile Picture</label>
+      <label for="profile_image" class="form-label" data-aos="fade-right">Profile Picture</label>
       <input type="file" class="form-control" id="profile_image" name="profile_image">
       {% if user.profile_image %}
   <img src="{{ url_for('static', filename='uploads/' ~ user.profile_image) }}"

@@ -92,18 +92,18 @@
         </div>
 
         <div class="mt-4 d-flex justify-content-center gap-3">
-    <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-warning">
+    <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-warning" data-aos="fade-right">
         <i class="fas fa-user-edit"></i> Edit Profile
     </a>
-    <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning">
+    <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning" data-aos="fade-up">
         <i class="fas fa-key"></i> Change Password
     </a>
     <form action="{{ url_for('delete_profile') }}" method="POST" onsubmit="return confirm('Are you sure?');">
-    <button class="btn btn-outline-danger">Delete Profile</button>
+    <button class="btn btn-outline-danger" data-aos="fade-up">Delete Profile</button>
 </form>
 
-    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">
-        <i class="fas fa-home"></i> Back to Home
+    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary" data-aos="fade-left">
+        <i class="fas fa-home" data-aos="fade-right"></i> Back to Home
     </a>
 </div>
 

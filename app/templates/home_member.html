@@ -10,7 +10,7 @@
 
     <!-- WELCOME CARD (LEFT) -->
     <div class="col-md-6">
-      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift h-100">
+      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift h-100" data-aos="fade-right" >
         <img
           src="{% if user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}

@@ -13,17 +13,19 @@
     background:
       linear-gradient(115deg, rgba(5,12,26,0.1), rgba(5,12,26,0.9)),
       url("{{ url_for('static', filename='img/home.png') }}") center/cover no-repeat;
+    color: #f5f5f5;  /* make sure text is light */
   }
 
   .public-hero-content {
     background: radial-gradient(circle at top left,
-      rgba(5,12,26,0.85), rgba(5,12,26,0.95));
+      rgba(5,12,26,0.9), rgba(5,12,26,0.98));
   }
 
   .section-card {
-    background-color: #0b1220;
+    background-color: #0f172a;              /* slightly lighter navy */
     border-radius: 1.5rem;
     border: 1px solid rgba(207,161,74,0.35);
+    color: #f5f5f5;                          /* force light text */
   }
 
   .pillars-icon {
@@ -35,10 +37,7 @@
       linear-gradient(135deg, rgba(207,161,74,0.15), rgba(5,12,26,0.95)),
       url("{{ url_for('static', filename='img/pic-home3.jpg') }}") center/cover no-repeat;
     border-radius: 1.5rem;
-  }
-
-  footer.site-footer {
-    border-top: 1px solid rgba(207,161,74,0.4);
+    color: #f5f5f5;
   }
 </style>
 
@@ -76,7 +75,7 @@
     </div>
 
     <div class="col-md-6 d-none d-md-block">
-      <img src="{{ url_for('static', filename='img/members.png') }}"
+      <img src="{{ url_for('static', filename='img/home.png') }}"
            alt="Lodge members"
            class="img-fluid h-100 w-100"
            style="object-fit: cover;">
@@ -86,7 +85,7 @@
 
 {# ============ ABOUT / OUR STORY ============ #}
 <div class="row g-4 mb-5">
-  <div class="col-lg-6" data-aos="fade-right">
+  <div class="col-lg-6 justify-content-center" data-aos="fade-right">
     <div class="section-card p-4 h-100">
       <h2 class="mb-3">Who we are</h2>
       <p class="mb-3">

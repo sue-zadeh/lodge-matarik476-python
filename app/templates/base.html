@@ -251,8 +251,8 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse justify-content-end ml-2" id="mainNavbar">
-        <ul class="navbar-nav ms-auto ml-2">
+            <div class="collapse navbar-collapse justify-content-end ml-3" data-aos="fade-button" id="mainNavbar">
+        <ul class="navbar-nav ms-auto">
 
   {# --- visitor (not logged in) --- #}
   {% if not session.get('user_id') %}
@@ -365,6 +365,15 @@
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
     </script>
+      <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      AOS.init({
+        duration: 800,
+        once: true
+      });
+    });
+  </script>
    <script>
   function togglePassword(inputId, spanEl) {
     const input = document.getElementById(inputId);
@@ -441,11 +450,7 @@ window.addEventListener('scroll', function() {
 </script>
   
 
-    <!-- Bootstrap JS -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-    </script>
-    ...
+        
 </body>
 </html>
 
