@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+  <h2 class="text-center mb-3 text-success">Manage Users</h2>
+  <p class="text-center text-light">
+    Admins can search all members and admins, change roles, activate / deactivate, or remove accounts.
+  </p>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'warning' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Search form -->
+  <form action="{{ url_for('admin_manage_users') }}" method="post" class="mb-4">
+    <div class="input-group">
+      <input type="text"
+             name="search"
+             class="form-control"
+             placeholder="Search by first name, last name, username, or email"
+             value="{{ search_term or '' }}">
+      <button class="btn btn-warning" type="submit">Search</button>
+    </div>
+  </form>
+
+  {% if message %}
+    <p class="text-center text-warning">{{ message }}</p>
+  {% endif %}
+
+  {% if users %}
+    <div class="row g-4">
+      {% for user in users %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100">
+
+          <!-- avatar -->
+          <div class="text-center pt-3">
+            <img
+              src="{% if user.profile_image %}
+                      {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+                   {% else %}
+                      {{ url_for('static', filename='img/logo1.jpg') }}
+                   {% endif %}"
+              class="rounded-circle border border-warning"
+              style="width:80px;height:80px;object-fit:cover;"
+              alt="Profile picture">
+          </div>
+
+          <div class="card-body">
+            <h5 class="card-title text-center mb-1">
+              {{ user.first_name }} {{ user.last_name }}
+            </h5>
+            <p class="text-center text-secondary mb-2">
+              {{ user.username }}
+            </p>
+
+            <p class="mb-1">
+              <strong>Role:</strong>
+              <span class="badge bg-{% if user.role == 'admin' %}danger{% else %}secondary{% endif %}">
+                {{ user.role|capitalize }}
+              </span>
+            </p>
+
+            <p class="mb-1">
+              <strong>Email:</strong> {{ user.email }}
+            </p>
+            {% if user.phone %}
+            <p class="mb-1">
+              <strong>Phone:</strong> {{ user.phone }}
+            </p>
+            {% endif %}
+            {% if user.birth_date %}
+            <p class="mb-1">
+              <strong>DOB:</strong> {{ user.birth_date }}
+            </p>
+            {% endif %}
+
+            <p class="mb-2">
+              <strong>Status:</strong>
+              {% if user.is_active %}
+                <span class="text-success">Active</span>
+              {% else %}
+                <span class="text-danger">Inactive</span>
+              {% endif %}
+            </p>
+
+            <!-- Change role -->
+            <form action="{{ url_for('admin_change_role', user_id=user.user_id) }}"
+                  method="post"
+                  class="mb-2">
+              <label for="role-{{ user.user_id }}" class="form-label small mb-1">
+                Change role
+              </label>
+              <div class="input-group input-group-sm">
+                <select name="role" id="role-{{ user.user_id }}" class="form-select">
+                  <option value="member" {% if user.role == 'member' %}selected{% endif %}>Member</option>
+                  <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+                <button class="btn btn-outline-warning" type="submit">
+                  Save
+                </button>
+              </div>
+            </form>
+
+            <!-- Activate / deactivate + delete -->
+            <div class="d-flex justify-content-between">
+              <form action="{{ url_for('admin_toggle_active', user_id=user.user_id) }}"
+                    method="post"
+                    onsubmit="return confirm('Change active status for {{ user.username }}?');">
+                <button class="btn btn-sm {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                  {% if user.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+
+              <form action="{{ url_for('admin_delete_user', user_id=user.user_id) }}"
+                    method="post"
+                    onsubmit="return confirm('Are you sure you want to delete {{ user.username }}?');">
+                <button class="btn btn-sm btn-outline-danger">
+                  Delete
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-center text-secondary">No users found.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

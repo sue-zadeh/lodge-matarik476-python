@@ -21,9 +21,9 @@
         >
         <div>
           <p class="mb-1 text-muted small">Welcome back,</p>
-          <h3 class="mb-1 text-light">
+          <h6 class="mb-1 text-light">
             Welcome {{ user.first_name }} {{ user.last_name }}
-          </h3>
+          </h6>
           <span class="badge bg-warning text-dark">
             Admin
           </span>
@@ -37,7 +37,7 @@
     Admin Dashboard
   </h1>
 
-  <p class="text-center mb-4">
+  <p class="text-center mb-4 ">
     Welcome, {{ session.get('username') }}
   </p>
 
@@ -45,10 +45,10 @@
   <div class="row g-4">
 
     <div class="col-md-4">
-      <a href="#" class="text-decoration-none">
-        <div class="card bg-dark text-light hover-lift">
+      <a href="{{ url_for('admin_manage_users') }}" class="text-decoration-none">
+        <div class="card bg-dark text-light hover-lift shadow-lg rounded">
           <div class="card-body text-center">
-            <i class="fas fa-users fa-2x mb-2"></i>
+            <i class="fas fa-users fa-2x mb-2 shadow-lg rounded"></i>
             <h5 class="card-title">Manage Members</h5>
             <p class="card-text small">View, edit and add lodge members.</p>
           </div>
@@ -59,10 +59,10 @@
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark text-light hover-lift">
-          <div class="card-body text-center">
-            <i class="fas fa-bullhorn fa-2x mb-2"></i>
-            <h5 class="card-title">Announcements</h5>
-            <p class="card-text small">Post news for members.</p>
+          <div class="card-body text-center shadow-lg rounded">
+            <i class="fas fa-bullhorn fa-2x mb-2 shadow-lg rounded"></i>
+            <h5 class="card-title">Manage Announcements</h5>
+            <p class="card-text small">All announcements, create new, edit</p>
           </div>
         </div>
       </a>
@@ -71,10 +71,10 @@
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark text-light hover-lift">
-          <div class="card-body text-center">
-            <i class="fas fa-file-upload fa-2x mb-2"></i>
-            <h5 class="card-title">Files</h5>
-            <p class="card-text small">Upload minutes, documents, etc.</p>
+          <div class="card-body text-center shadow-lg rounded">
+            <i class="fas fa-file-upload fa-2x mb-2 shadow-lg rounded"></i>
+            <h5 class="card-title">Manage Files</h5>
+            <p class="card-text small">View files, upload new ones, delete</p>
           </div>
         </div>
       </a>
@@ -82,57 +82,68 @@
 
   </div>
 
-  <div class="row g-4 mt-3">
+  <div class="row g-4 mt-3 justify-content-center">
 
 
 <div class="col-md-4">
-      <a href="{{ url_for('register') }}" class="text-decoration-none">
-        <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <h5 class="card-title text-warning shadow">Register a new Member / Admin</h5>
-            <p class="card-text text-muted small">
-              Share minutes, summons, and resources with members.
-            </p>
-            <div class="text-end">
-            <i class="fas fa-user-plus fa-2x mb-2"></i>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
+  <a href="{{ url_for('register') }}" class="text-decoration-none">
+    <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+      <div class="card-body d-flex flex-column justify-content-between shadow-lg rounded">
+        <h5 class="card-title text-warning">Register a new Member / Admin</h5>
 
+        <p class="card-text small">
+          Add new lodge members and admins to the system.
+        </p>
+
+        <div class="text-end">
+          <i class="fas fa-user-plus fa-2x text-warning shadow-lg rounded"></i>
+        </div>
+      </div>
+    </div>
+  </a>
+</div>
+
+   
    
     <div class="col-md-4">
       <a href="#" class="text-decoration-none">
-        <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <h5 class="card-title text-warning">Upload Files</h5>
-            <p class="card-text text-muted small">
-              Share minutes, summons, and resources with members.
-            </p>
-            <div class="text-end">
-              <i class="fas fa-file-upload fa-2x text-warning"></i>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-4">
-      <a href="#" class="text-decoration-none">
-        <div class="card bg-dark border-0 shadow-sm h-100 hover-lift">
-          <div class="card-body d-flex flex-column justify-content-between">
+    <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+      <div class="card-body d-flex flex-column justify-content-between shadow-lg rounded">
             <h5 class="card-title text-warning">Manage Events / Calendar</h5>
-            <p class="card-text text-muted small">
-              Add or update meetings and special nights.
+             <p class="card-text small">
+              Add / edit events & meetings and special nights
             </p>
-            <div class="text-end">
-              <i class="fas fa-calendar-alt fa-2x text-warning"></i>
+            <div class="text-end small">
+              <i class="fas fa-calendar-alt fa-2x text-warning shadow-lg rounded"></i>
             </div>
           </div>
         </div>
       </a>
     </div>
+    
+    <div class="row mt-4 justify-content-center">
+      <div class="col-md-9 col-lg-6">
+        <div class="card bg-dark text-light border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title text-warning">
+          Update “Admin's Mesage to members”
+        </h5>
+        <form action="{{ url_for('admin_whats_next') }}" method="post">
+          <label class="form-label small text-secondary">
+            Short note that members will see on their home page.
+          </label>
+          <textarea name="whats_next"
+                    class="form-control bg-dark text-light fs-5"
+                    rows="3"
+                    placeholder="Example: Installation night next Thursday – full regalia, please arrive by 7:00pm.">{{ latest_note }}</textarea>
+          <button class="btn btn-warning btn-sm mt-2">
+            Save message &amp; send to members' home page
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
   </div>
 

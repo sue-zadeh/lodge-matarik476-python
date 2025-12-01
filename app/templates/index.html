@@ -3,26 +3,178 @@
 {% block title %}Home – Lodge Matariki 476{% endblock %}
 
 {% block content %}
-<div class="hero-card text-center">
-    <h1 class="display-5 fw-bold mb-3">
-        A lodge of friendship, support, and community
-    </h1>
-    <p class="lead mb-4">
-        Welcome to Lodge Matariki 476. Members can log in to see announcements,
-        events, and lodge resources. Visitors can learn more about who we are.
-    </p>
 
-    {% if 'user_id' not in session %}
-        <a href="{{ url_for('register') }}" class="btn btn-login me-2">
-            Join the Lodge
-        </a>
-        <a href="{{ url_for('login') }}" class="btn btn-login">
-            Members Login
-        </a>
-    {% else %}
-        <a href="{{ url_for('profile') }}" class="btn btn-login">
+{# --- Page-specific styles (kept small) --- #}
+<style>
+  .public-hero {
+    min-height: 70vh;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    background:
+      linear-gradient(115deg, rgba(5,12,26,0.1), rgba(5,12,26,0.9)),
+      url("{{ url_for('static', filename='img/home.png') }}") center/cover no-repeat;
+  }
+
+  .public-hero-content {
+    background: radial-gradient(circle at top left,
+      rgba(5,12,26,0.85), rgba(5,12,26,0.95));
+  }
+
+  .section-card {
+    background-color: #0b1220;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(207,161,74,0.35);
+  }
+
+  .pillars-icon {
+    font-size: 2rem;
+  }
+
+  .cta-band {
+    background:
+      linear-gradient(135deg, rgba(207,161,74,0.15), rgba(5,12,26,0.95)),
+      url("{{ url_for('static', filename='img/pic-home3.jpg') }}") center/cover no-repeat;
+    border-radius: 1.5rem;
+  }
+
+  footer.site-footer {
+    border-top: 1px solid rgba(207,161,74,0.4);
+  }
+</style>
+
+{# ================= HERO ================= #}
+<div class="public-hero mb-5 shadow-lg" data-aos="fade-up">
+  <div class="row g-0 h-100">
+    <div class="col-md-6 d-flex align-items-center public-hero-content p-5">
+      <div>
+        <p class="text-warning text-uppercase small mb-2">
+          A lodge of friendship, support, and community
+        </p>
+        <h1 class="display-5 fw-bold mb-3">
+          Freemasonry in the heart of Tāmaki Makaurau.
+        </h1>
+        <p class="lead mb-4">
+          Lodge Matariki 476 is a welcoming lodge where good men support each
+          other, serve the community, and enjoy genuine fellowship.
+        </p>
+
+        {% if not session.get('user_id') %}
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('register') }}" class="btn btn-warning fw-semibold px-4">
+              Join the Lodge
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-light fw-semibold px-4">
+              Members Login
+            </a>
+          </div>
+        {% else %}
+          <a href="{{ url_for('profile') }}" class="btn btn-warning fw-semibold px-4">
             Go to your profile
-        </a>
-    {% endif %}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-md-6 d-none d-md-block">
+      <img src="{{ url_for('static', filename='img/members.png') }}"
+           alt="Lodge members"
+           class="img-fluid h-100 w-100"
+           style="object-fit: cover;">
+    </div>
+  </div>
 </div>
+
+{# ============ ABOUT / OUR STORY ============ #}
+<div class="row g-4 mb-5">
+  <div class="col-lg-6" data-aos="fade-right">
+    <div class="section-card p-4 h-100">
+      <h2 class="mb-3">Who we are</h2>
+      <p class="mb-3">
+        Lodge Matariki 476 is part of Freemasonry in New Zealand. We bring
+        together members from different backgrounds who share values of integrity,
+        respect, and service.
+      </p>
+      <p class="mb-0">
+        Our meetings combine tradition with modern life – a place to pause,
+        connect, and do something meaningful for others.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-lg-6" data-aos="fade-left">
+    <div class="section-card p-0 h-100">
+      <img src="{{ url_for('static', filename='img/pic-home4.jpg') }}"
+           alt="Lodge ceremony"
+           class="img-fluid w-100"
+           style="border-radius: 1.5rem;">
+    </div>
+  </div>
+</div>
+
+{# ============ THREE PILLARS / “GOOD VIBES” STYLE ============ #}
+<div class="section-card p-4 mb-5" data-aos="fade-up">
+  <div class="row g-4 align-items-center">
+    <div class="col-lg-6">
+      <h2 class="mb-3">What you’ll find here</h2>
+      <p class="mb-3">
+        Becoming a Freemason isn’t about secret handshakes – it’s about
+        friendship, personal growth, and helping others.
+      </p>
+      <p class="mb-0">
+        Whether you’re curious, new to the craft, or a visiting brother, you’ll
+        find a warm welcome at Matariki.
+      </p>
+    </div>
+    <div class="col-lg-6">
+      <div class="row g-3">
+        <div class="col-md-4 text-center">
+          <div class="pillars-icon mb-2 text-warning">
+            <i class="fas fa-handshake"></i>
+          </div>
+          <h5>Friendship</h5>
+          <p class="small text-muted mb-0">
+            Genuine connections and support, inside and outside the lodge room.
+          </p>
+        </div>
+        <div class="col-md-4 text-center">
+          <div class="pillars-icon mb-2 text-warning">
+            <i class="fas fa-heart"></i>
+          </div>
+          <h5>Charity</h5>
+          <p class="small text-muted mb-0">
+            Quietly helping our local community in practical ways.
+          </p>
+        </div>
+        <div class="col-md-4 text-center">
+          <div class="pillars-icon mb-2 text-warning">
+            <i class="fas fa-compass"></i>
+          </div>
+          <h5>Tradition</h5>
+          <p class="small text-muted mb-0">
+            Ritual, symbolism, and values passed down through generations.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ============ RSVP / CALL TO ACTION BAND ============ #}
+<div class="cta-band text-center text-light py-5 mb-5" data-aos="zoom-in">
+  <h2 class="display-6 fw-bold mb-2">Thinking about visiting?</h2>
+  <p class="lead mb-4">
+    We welcome enquiries from good men who are curious about Freemasonry,
+    and from travelling brethren who would like to attend a meeting.
+  </p>
+  <div class="d-flex justify-content-center gap-3 flex-wrap">
+    <a href="{{ url_for('register') }}" class="btn btn-light fw-semibold px-4">
+      Request to Join
+    </a>
+    <a href="#" class="btn btn-outline-light fw-semibold px-4">
+      Contact the Secretary
+    </a>
+  </div>
+</div>
+
+
 {% endblock %}

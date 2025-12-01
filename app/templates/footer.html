@@ -1,0 +1,49 @@
+{# app/templates/footer.html #}
+
+<footer id="contact-footer" class="footer mt-5 pt-4 pb-4 border-top border-warning-subtle">
+  <div class="container">
+    
+    <div class="row gy-3 align-items-center">
+
+      <!-- Left: Lodge info -->
+      <div class="col-md-4 text-md-start text-center">
+        <h5 class="text-warning mb-2">Lodge Matariki 476</h5>
+        <p class="mb-1 small">Freemasons New Zealand – Auckland</p>
+        <p class="mb-1 small">
+          <i class="fas fa-map-marker-alt me-2 text-warning"></i>
+          Example Lodge Rooms, 123 Demo Street, Auckland
+        </p>
+        <p class="mb-0 small">
+          <i class="fas fa-phone me-2 text-warning"></i>
+          021 000 0000
+        </p>
+      </div>
+
+      <!-- Middle: copyright -->
+      <div class="col-md-4 text-center small text-secondary mt-3 mt-md-0">
+        <p class="mb-0">
+          &copy; {{ current_year|default(2025) }} Lodge Matariki 476. All rights reserved.
+        </p>
+      </div>
+
+      <!-- Right: buttons -->
+      <div class="col-md-4 text-md-end text-center mt-3 mt-md-0">
+        {% if 'user_id' not in session %}
+          <a href="{{ url_for('login') }}" class="btn btn-outline-warning me-2 mb-2">
+            Members Login
+          </a>
+          <a href="{{ url_for('register') }}" class="btn btn-warning mb-2">
+            Join the Lodge
+          </a>
+        {% else %}
+          <a href="{{ url_for('member_home') if session.get('role') == 'member'
+                     else url_for('admin_home') }}"
+             class="btn btn-warning mb-2">
+            Go to Dashboard
+          </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</footer>

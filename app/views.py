@@ -57,13 +57,7 @@ def save_profile_photo(photo):
 
 # ---------- Role helper ----------
 
-def redirect_based_on_role(html_file):
-    if "member" in session:
-        return redirect(url_for("community"))
-    elif "admin" in session:
-        return redirect(url_for("community"))
-    else:
-        return render_template(html_file)
+
 
 
 def render_login_or_register(registered, toLogin, msg, username):
@@ -79,9 +73,20 @@ def uploaded_file(filename):
 
 
 # ---------- Routes ----------
+@app.context_processor
+def inject_current_year():
+    return {'current_year': datetime.now().year}
 
 @app.route("/")
 def home():
+    role = session.get('role')
+
+    if role == 'admin':
+        return redirect(url_for('admin_home'))
+    elif role == 'member':
+        return redirect(url_for('member_home'))
+
+    # Not logged in → public landing page
     return render_template("index.html")
 
 
@@ -241,21 +246,42 @@ def member_home():
         return redirect(url_for('login'))
 
     user = None
+    whats_next = None
     user_id = session.get('user_id')
 
     if user_id:
         cursor, conn = getCursor(dictionary=True)
+
+        # ---- get current user ----
         cursor.execute(
-            "SELECT user_id, username, first_name, last_name, profile_image "
-            "FROM users WHERE user_id = %s",
+            """
+            SELECT user_id, username, first_name, last_name, profile_image, role
+            FROM users
+            WHERE user_id = %s
+            """,
             (user_id,)
         )
         user = cursor.fetchone()
+
+        # ---- get latest "what's next" message (if any) ----
+        cursor.execute(
+            """
+            SELECT content
+            FROM whats_next
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        )
+        row = cursor.fetchone()
+        if row:
+            whats_next = row['content']
+
         cursor.close()
         conn.close()
 
-    return render_template('home_member.html', user=user)
+    return render_template('home_member.html', user=user, whats_next=whats_next)
 
+#-----Admin Home ------#
 
 @app.route('/admin/home')
 def admin_home():
@@ -264,20 +290,40 @@ def admin_home():
         return redirect(url_for('login'))
 
     user = None
+    latest_note = ""   # default if there is no message yet
     user_id = session.get('user_id')
 
     if user_id:
         cursor, conn = getCursor(dictionary=True)
+
+        # Get admin user info
         cursor.execute(
-            "SELECT user_id, username, first_name, last_name, profile_image "
-            "FROM users WHERE user_id = %s",
+            """
+            SELECT user_id, username, first_name, last_name, profile_image, role
+            FROM users
+            WHERE user_id = %s
+            """,
             (user_id,)
         )
         user = cursor.fetchone()
+
+        # Get last "what's next" message
+        cursor.execute(
+            """
+            SELECT content
+            FROM whats_next
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+            """
+        )
+        row = cursor.fetchone()
+        if row:
+            latest_note = row["content"]
+
         cursor.close()
         conn.close()
 
-    return render_template('home_admin.html', user=user)
+    return render_template('home_admin.html', user=user, latest_note=latest_note)
 
 # ---- logout ---- #
 @app.route('/logout')
@@ -483,3 +529,194 @@ def change_password():
     app.logger.debug('Redirecting to login because of missing session')
     flash('You must be logged in to change your password.', 'error')
     return redirect(url_for('login'))
+  
+# =========================================================
+# ADMIN – whats_next
+# =========================================================
+
+@app.route('/admin/whats_next', methods=['POST'])
+def admin_whats_next():
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    text = request.form.get('whats_next', '').strip()
+
+    if not text:
+        flash('Message cannot be empty.', 'warning')
+        return redirect(url_for('admin_home'))
+
+    cursor, conn = getCursor()
+    cursor.execute(
+        "INSERT INTO whats_next (content) VALUES (%s)",
+        (text,)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("What's Happening Next message updated.", 'success')
+    return redirect(url_for('admin_home'))
+# =========================================================
+# ADMIN – MANAGE USERS (members + admins)
+# =========================================================
+
+@app.route('/admin/users', methods=['GET', 'POST'])
+def admin_manage_users():
+    # only admins can see this page
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    search_term = ""
+    users = []
+    message = ""
+
+    cursor, conn = getCursor(dictionary=True)
+
+    try:
+        if request.method == 'POST':
+            search_term = request.form.get('search', '').strip()
+
+        base_sql = """
+            SELECT
+                user_id,
+                username,
+                first_name,
+                last_name,
+                email,
+                phone,
+                birth_date,
+                profile_image,
+                role,
+                is_active
+            FROM users
+        """
+
+        params = []
+
+        if search_term:
+            base_sql += """
+                WHERE
+                    first_name ILIKE %s
+                    OR last_name ILIKE %s
+                    OR username ILIKE %s
+                    OR email ILIKE %s
+            """
+            like = f"%{search_term}%"
+            params = [like, like, like, like]
+
+        base_sql += " ORDER BY role DESC, first_name, last_name"
+
+        cursor.execute(base_sql, params)
+        users = cursor.fetchall()
+
+        if search_term and not users:
+            message = f"Sorry, there are no results for '{search_term}'."
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render_template(
+        "admin_manage_users.html",
+        users=users,
+        search_term=search_term,
+        message=message
+    )
+
+
+# ---------------------------------------------------------
+# Change role (admin <-> member)
+# ---------------------------------------------------------
+
+@app.route('/admin/users/<int:user_id>/change_role', methods=['POST'])
+def admin_change_role(user_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    new_role = request.form.get('role')
+    if new_role not in ['admin', 'member']:
+        flash("Invalid role selected.", "danger")
+        return redirect(url_for('admin_manage_users'))
+
+    # Optional: don't allow an admin to change their own role
+    if user_id == session.get('user_id'):
+        flash("You cannot change your own role.", "warning")
+        return redirect(url_for('admin_manage_users'))
+
+    cursor, conn = getCursor()
+    try:
+        cursor.execute(
+            "UPDATE users SET role = %s WHERE user_id = %s",
+            (new_role, user_id)
+        )
+        conn.commit()
+        flash("User role updated successfully.", "success")
+    except Exception:
+        conn.rollback()
+        flash("Failed to update user role.", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('admin_manage_users'))
+
+
+# ---------------------------------------------------------
+# Toggle active / inactive
+# ---------------------------------------------------------
+
+@app.route('/admin/users/<int:user_id>/toggle_active', methods=['POST'])
+def admin_toggle_active(user_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    # Optional: don't lock yourself out
+    if user_id == session.get('user_id'):
+        flash("You cannot deactivate your own account.", "warning")
+        return redirect(url_for('admin_manage_users'))
+
+    cursor, conn = getCursor()
+    try:
+        cursor.execute(
+            "UPDATE users SET is_active = NOT is_active WHERE user_id = %s",
+            (user_id,)
+        )
+        conn.commit()
+        flash("User status updated.", "success")
+    except Exception:
+        conn.rollback()
+        flash("Failed to update user status.", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('admin_manage_users'))
+
+
+# ---------------------------------------------------------
+# Delete user
+# ---------------------------------------------------------
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+def admin_delete_user(user_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    # Optional: safety – don't let admin delete themselves
+    if user_id == session.get('user_id'):
+        flash("You cannot delete your own account.", "warning")
+        return redirect(url_for('admin_manage_users'))
+
+    cursor, conn = getCursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
+        conn.commit()
+        flash("User removed successfully.", "success")
+    except Exception:
+        conn.rollback()
+        flash("Failed to delete user.", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('admin_manage_users'))

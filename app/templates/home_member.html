@@ -3,11 +3,14 @@
 {% block title %}Member Home{% endblock %}
 
 {% block content %}
+<div class="container mt-4">
 
-<!-- Welcome card -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift">
+  <!-- WELCOME + ANNOUNCEMENTS IN ONE ROW -->
+  <div class="row mb-4 g-4">
+
+    <!-- WELCOME CARD (LEFT) -->
+    <div class="col-md-6">
+      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift h-100">
         <img
           src="{% if user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
@@ -19,98 +22,144 @@
           style="width:72px;height:72px;object-fit:cover;"
         >
         <div>
-          <p class="mb-1 text-muted small">Welcome back,</p>
-          <h3 class="mb-1 text-light">Welcome 
-            {{ user.first_name }} {{ user.last_name }}
-          </h3>
+          <p class="mb-1 small text-secondary">Welcome back,</p>
+          <h6 class="mb-1 text-light">
+            Welcome {{ user.first_name }} {{ user.last_name }}
+          </h6>
           <span class="badge bg-warning text-dark">
-            {{ user.role|capitalize }} member
+            {{ user.role|capitalize }} Member
           </span>
         </div>
       </div>
     </div>
-  </div>
 
-<!-- HERO SECTION -->
-<section class="hero-section d-flex align-items-center"
-         style="
-           background: url('{{ url_for('static', filename='img/members.png') }}') center/cover no-repeat;
-           height: 85vh;
-           position: relative;
-         ">
+    <!-- ANNOUNCEMENTS / NEXT EVENT (RIGHT) -->
+    <div class="col-md-6">
+      <div class="bg-dark bg-opacity-75 rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between">
+        <div>
+          <h4 class="text-warning mb-2">
+            <i class="fas fa-bullhorn me-2"></i> Lodge Announcements
+          </h4>
+          <p class="mb-2 text-light">
+            Stay up to date with meeting nights, special events and important lodge news.
+          </p>
+        </div>
 
-  <div class="hero-overlay"></div>
-
-  <div class="container text-center text-light position-relative" data-aos="fade-up">
-      <h1 class="display-4 fw-bold">Welcome to Lodge Matariki 476</h1>
-      <p class="fs-5 mt-3">
-        Honouring tradition. Strengthening brotherhood. Building the future together.
-      </p>
-
-      <div class="mt-4">
-        <img src="{% if user.profile_image %}
-                      {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
-                   {% else %}
-                      {{ url_for('static', filename='img/logo1.jpg') }}
-                   {% endif %}"
-             class="rounded-circle border border-warning shadow"
-             style="width:110px;height:110px;object-fit:cover;">
-        <h3 class="mt-3">{{ user.first_name }} {{ user.last_name }}</h3>
-        <span class="badge bg-warning text-dark fs-6">Member</span>
+        {% if next_event %}
+          <div class="mt-2">
+            <p class="mb-1 text-light fw-semibold">
+              {{ next_event.title }}
+            </p>
+            <p class="mb-1 text-light">
+              {{ next_event.date_formatted }} &nbsp;
+              <span class="text-warning">{{ next_event.time_formatted }}</span>
+            </p>
+            {% if next_event.description %}
+              <p class="mb-0 text-secondary small">
+                {{ next_event.description }}
+              </p>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="mt-2 mb-0 text-secondary small">
+            There are no upcoming events scheduled yet.
+          </p>
+        {% endif %}
       </div>
+    </div>
+
   </div>
-</section>
 
+  <!-- HERO SECTION -->
+  <section class="hero-section d-flex align-items-center text-center text-light shadow-lg rounded"
+    style="background-image:
+      linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.35)),
+      url('{{ url_for('static', filename='img/members.png') }}');
+      min-height: 420px;
+      background-size: cover;
+      background-position: center;">
+  </section>
 
-<!-- QUICK LINKS -->
-<section class="container py-5">
-  <div class="row g-4">
+  <h1 class="fw-bold pt-2 text-light text-center">Welcome to Lodge Matariki 476</h1>
+  <p class="fs-5 mt-3 text-center">
+    Honouring tradition. Strengthening brotherhood. Building the future together.
+  </p>
 
-    <div class="col-md-3" data-aos="fade-up">
-      <a href="{{ url_for('profile') }}" class="card card-link shadow-sm p-4 text-center text-decoration-none">
-        <i class="fas fa-id-card fa-2x text-warning mb-3"></i>
-        <h5>My Profile</h5>
-        <p class="text-muted small">View and update your personal details.</p>
+  <!-- QUICK LINKS -->
+  <div class="row g-3 mt-1 justify-content-center">
+    <div class="col-md-3">
+      <a href="{{ url_for('profile') }}" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-id-card fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">My Profile</h5>
+            <p class="card-text small">
+              View and update your personal details.
+            </p>
+          </div>
+        </div>
       </a>
     </div>
 
-  <div class="col-md-3" data-aos="fade-up" data-aos-delay="150">
-  <a href="#" class="card card-link shadow-sm p-4 text-center text-decoration-none">
-    <i class="fas fa-calendar fa-2x text-warning mb-3"></i>
-    <h5>Calendar</h5>
-    <p class="text-muted small">Upcoming lodge meetings & events (coming soon).</p>
-  </a>
-</div>
+    <div class="col-md-4 justify-content-center">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-calendar fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">Calendar</h5>
+            <p class="card-text small">
+              Upcoming lodge meetings &amp; events (coming soon).
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
 
-<div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
-  <a href="#" class="card card-link shadow-sm p-4 text-center text-decoration-none">
-    <i class="fas fa-bullhorn fa-2x text-warning mb-3"></i>
-    <h5>Announcements</h5>
-    <p class="text-muted small">Latest lodge updates and notices (coming soon).</p>
-  </a>
-</div>
+    <!-- <div class="col-md-3">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-bullhorn fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">Announcements</h5>
+            <p class="card-text small">
+              Latest lodge updates and notices (coming soon).
+            </p>
+          </div>
+        </div>
+      </a>
+    </div> -->
 
-<div class="col-md-3" data-aos="fade-up" data-aos-delay="450">
-  <a href="#" class="card card-link shadow-sm p-4 text-center text-decoration-none">
-    <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
-    <h5>Files</h5>
-    <p class="text-muted small">Minutes, documents, and resources (coming soon).</p>
-  </a>
-</div>
-
+    <div class="col-md-4">
+      <a href="#" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">Files</h5>
+            <p class="card-text small">
+              Minutes, documents, and resources (coming soon).
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
   </div>
-</section>
 
+  <!-- WHAT'S NEXT (you can keep or remove later) -->
+<div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm mt-4">
+  <h4 class="text-warning">
+    <i class="fas fa-star"></i> What’s Happening Next( A message from admin)
+  </h4>
 
-<!-- WHAT'S NEXT -->
-<section class="container pb-5">
-  <div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm" data-aos="fade-up">
-    <h4 class="text-warning"><i class="fas fa-star"></i> What’s Happening Next</h4>
-    <p class="text-light mt-2">
-      This section can later show next meeting date, location, dress code, or any
-      important notes for members.
+  {% if whats_next %}
+    <p class="text-light mt-2 fs-4">
+      {{ whats_next }}
     </p>
-  </div>
-</section>
+  {% else %}
+    <p class="text-secondary mt-2">
+      No extra notes from the lodge yet. Please check again later.
+    </p>
+  {% endif %}
+</div>
 
+</div>
 {% endblock %}

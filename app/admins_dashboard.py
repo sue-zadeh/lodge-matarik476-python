@@ -103,3 +103,26 @@
 #     if session.get('role') != 'admin':
 #         return redirect(url_for('login'))
 #     return render_template('admin_upload_file.html')
+#   @app.route('/admin/whats_next', methods=['POST'])
+# def admin_whats_next():
+#     if session.get('role') != 'admin':
+#         return redirect(url_for('login'))
+
+#     text = request.form.get('whats_next', '').strip()
+
+#     if not text:
+#         flash('Message cannot be empty.', 'warning')
+#         return redirect(url_for('admin_home'))
+
+#     cursor, conn = getCursor()
+#     cursor.execute(
+#         "INSERT INTO whats_next (content) VALUES (%s)",
+#         (text,)
+#     )
+#     conn.commit()
+#     cursor.close()
+#     conn.close()
+
+#     flash('“What’s Happening Next” message updated.', 'success')
+#     return redirect(url_for('admin_home'))
+
