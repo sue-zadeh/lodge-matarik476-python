@@ -12,7 +12,7 @@
         style="max-width: 600px; margin: 0 auto;">
     
     <div class="mb-3">
-      <label for="username" class="form-label" data-aos="fade-right">Username</label>
+      <label for="username" class="form-label" data-aos="fade-down-right">Username</label>
       <input type="text" class="form-control" id="username"
              name="username" value="{{ user['username'] }}" >
     </div>
@@ -24,18 +24,18 @@
     </div>
 
     <div class="mb-3">
-      <label for="lname" class="form-label" data-aos="fade-right">Last Name</label>
+      <label for="lname" class="form-label" data-aos="fade-down-right">Last Name</label>
       <input type="text" class="form-control" id="lname"
              name="lname" value="{{ user['last_name'] }}" >
     </div>
 
     <div class="mb-3">
-      <label for="email" class="form-label" data-aos="fade-left">Email</label>
+      <label for="email" class="form-label" data-aos="fade-down-left">Email</label>
       <input type="email" class="form-control" id="email"
              name="email" value="{{ user['email'] }}" required>
     </div>
 <div class="mb-3">
-  <label for="phone" class="form-label" data-aos="fade-right">Phone</label>
+  <label for="phone" class="form-label" data-aos="fade-down-right">Phone</label>
   <input type="text" class="form-control" id="phone"
          name="phone" value="{{ user['phone'] }}">
 </div>
@@ -47,7 +47,7 @@
     </div>
 
     <div class="mb-3">
-      <label for="profile_image" class="form-label" data-aos="fade-right">Profile Picture</label>
+      <label for="profile_image" class="form-label" data-aos="fade-down-right">Profile Picture</label>
       <input type="file" class="form-control" id="profile_image" name="profile_image">
       {% if user.profile_image %}
   <img src="{{ url_for('static', filename='uploads/' ~ user.profile_image) }}"
@@ -60,11 +60,11 @@
 
     <div class="row mt-4">
       <div class="col-md-6">
-        <button type="button" class="btn btn-outline-secondary w-100"
+        <button type="button" class="btn btn-outline-secondary w-100 " data-aos="fade-down-right"
                 onclick="window.history.back()">Cancel</button>
       </div>
       <div class="col-md-6">
-        <button type="submit" class="btn btn-warning w-100">
+        <button type="submit" class="btn btn-warning w-100" data-aos="fade-down-left">
           Save Changes
         </button>
       </div>
@@ -73,7 +73,7 @@
 
   <div class="row mt-4">
     <div class="col-md-12 text-center">
-      <a href="{{ url_for('change_password') }}" class="btn btn-outline-light">
+      <a href="{{ url_for('change_password') }}" class="btn btn-outline-light" data-aos="fade-down-bottom">
         <i class="fas fa-key"></i> Change Password
       </a>
     </div>

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container mt-5">
 
-  <h2 class="text-center mb-3 text-success">Manage Users</h2>
+  <h2 class="text-center mb-3 text-success" data-aos="fade-down-right">Manage Users</h2>
   <p class="text-center text-light">
     Admins can search all members and admins, change roles, activate / deactivate, or remove accounts.
   </p>
@@ -24,7 +24,7 @@
   {% endwith %}
 
   <!-- Search form -->
-  <form action="{{ url_for('admin_manage_users') }}" method="post" class="mb-4">
+  <form action="{{ url_for('admin_manage_users') }}" method="get" class="mb-4" data-aos="fade-down-left">
     <div class="input-group">
       <input type="text"
              name="search"
@@ -43,7 +43,7 @@
     <div class="row g-4">
       {% for user in users %}
       <div class="col-md-6 col-lg-4">
-        <div class="card bg-dark text-light border-0 shadow-sm h-100">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100" data-aos="fade-down-right">
 
           <!-- avatar -->
           <div class="text-center pt-3">

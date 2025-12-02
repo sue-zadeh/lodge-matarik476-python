@@ -10,7 +10,7 @@
 
     <!-- WELCOME CARD (LEFT) -->
     <div class="col-md-6">
-      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift h-100" data-aos="fade-right" >
+      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift h-100" data-aos="fade-down-right" >
         <img
           src="{% if user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
@@ -35,7 +35,7 @@
 
     <!-- ANNOUNCEMENTS / NEXT EVENT (RIGHT) -->
     <div class="col-md-6">
-      <div class="bg-dark bg-opacity-75 rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between">
+      <div class="bg-dark bg-opacity-75 rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between" data-aos="fade-down-left">
         <div>
           <h4 class="text-warning mb-2">
             <i class="fas fa-bullhorn me-2"></i> Lodge Announcements
@@ -77,17 +77,17 @@
       url('{{ url_for('static', filename='img/members.png') }}');
       min-height: 420px;
       background-size: cover;
-      background-position: center;">
+      background-position: center;" data-aos="fade-bottom">
   </section>
 
-  <h1 class="fw-bold pt-2 text-light text-center">Welcome to Lodge Matariki 476</h1>
-  <p class="fs-5 mt-3 text-center">
+  <h1 class="fw-bold pt-2 text-light text-center" data-aos="fade-down-right">Welcome to Lodge Matariki 476</h1>
+  <p class="fs-5 mt-3 text-center" data-aos="fade-down-left">
     Honouring tradition. Strengthening brotherhood. Building the future together.
   </p>
 
   <!-- QUICK LINKS -->
   <div class="row g-3 mt-1 justify-content-center">
-    <div class="col-md-3">
+    <div class="col-md-3" data-aos="fade-down-right">
       <a href="{{ url_for('profile') }}" class="text-decoration-none">
         <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
           <div class="card-body text-center d-flex flex-column justify-content-between">
@@ -101,7 +101,7 @@
       </a>
     </div>
 
-    <div class="col-md-4 justify-content-center">
+    <div class="col-md-4 justify-content-center" data-aos="fade-down-right">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
           <div class="card-body text-center d-flex flex-column justify-content-between">
@@ -129,7 +129,7 @@
       </a>
     </div> -->
 
-    <div class="col-md-4">
+    <div class="col-md-4" data-aos="fade-down-left" data-aos="fade-down-left">
       <a href="#" class="text-decoration-none">
         <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
           <div class="card-body text-center d-flex flex-column justify-content-between">
@@ -145,7 +145,7 @@
   </div>
 
   <!-- WHAT'S NEXT (you can keep or remove later) -->
-<div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm mt-4">
+<div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm mt-4" data-aos="fade-down-left">
   <h4 class="text-warning">
     <i class="fas fa-star"></i> What’s Happening Next( A message from admin)
   </h4>

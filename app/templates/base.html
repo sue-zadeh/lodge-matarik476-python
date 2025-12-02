@@ -45,22 +45,32 @@
             border-bottom: 1px solid #cfa14a;   /* gold line */
         }
         .navbar {
-  transition: all .3s ease;
-}
+          transition: all .3s ease;
+        }
 
-.navbar.scrolled {
-  background-color: rgba(0,0,0,0.85) !important;
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
-}
+        .navbar.scrolled {
+          background-color: rgba(0,0,0,0.85) !important;
+          padding-top: 5px !important;
+          padding-bottom: 5px !important;
+        }
 
 
         .navbar-brand,
         .navbar-nav .nav-link {
-            color: #ffffff;
+            color: #ffffff !important;
             font-weight: 500;
             letter-spacing: 0.03rem;
         }
+        .navbar-brand:hover,
+        .navbar-brand:focus {
+          color: #cfa14a !important;   /* gold */
+          text-decoration: none;
+        }
+       .navbar-nav .nav-link {
+         padding: 0.5rem 1.5rem  !important;
+        }
+
+       
 
         .navbar-brand img {
             height: 68px;
@@ -174,14 +184,17 @@
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
+  overflow: hidden;
 }
 .cta-band::before {
   content: "";
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.6);
+  z-index: 0;
+  pointer-events: none;
 }
-.cta-band > .container {
+.cta-band > * {
   position: relative;
   z-index: 1;
 }
@@ -251,22 +264,22 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse justify-content-end ml-3" data-aos="fade-button" id="mainNavbar">
+            <div class="collapse navbar-collapse justify-content-end ml-3" data-aos="fade-down" id="mainNavbar">
         <ul class="navbar-nav ms-auto">
 
   {# --- visitor (not logged in) --- #}
   {% if not session.get('user_id') %}
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="{{ url_for('home') }}">Home</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">About Us</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}"" href="#">About Us</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Our Story</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="#">Our Story</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Contact Us</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'contact' %}active{% endif %}" href="#">Contact Us</a>
     </li>
 
     <li class="nav-item ms-3">
@@ -279,47 +292,47 @@
   {# --- member --- #}
   {% elif session.get('role') == 'member' %}
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="{{ url_for('member_home') }}">Home</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'member_home' %}active{% endif %}" href="{{ url_for('member_home') }}">Home</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Our Story</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="#">Our Story</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Calendar</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}"" href="#">Calendar</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Announcements</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'announcements' %}active{% endif %}" href="#">Announcements</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Files</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'files' %}active{% endif %}" href="#">Files</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="{{ url_for('profile') }}">Profile</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
     </li>
 
     <li class="nav-item ms-3">
-      <a class="btn btn-outline-warning" href="{{ url_for('logout') }}">Logout</a>
+      <a class="btn btn-outline-warning {% if request.endpoint == 'logout' %}active{% endif %}" href="{{ url_for('logout') }}">Logout</a>
     </li>
 
   {# --- admin --- #}
   {% elif session.get('role') == 'admin' %}
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="{{ url_for('admin_home') }}">Home</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'admin_home' %}active{% endif %}" href="{{ url_for('admin_home') }}">Home</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="{{ url_for('profile') }}">Profile</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Calendar</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}" href="#">Calendar</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Announcements</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'announcements' %}active{% endif %}" href="#">Announcements</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline" href="#">Files</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'files' %}active{% endif %}" href="#">Files</a>
     </li>
     <li class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+      <a class="nav-link dropdown-toggle {% if request.endpoint == 'admin' %}active{% endif %}" href="#" data-bs-toggle="dropdown">
         Admin
       </a>
       <ul class="dropdown-menu dropdown-menu-end">
@@ -370,7 +383,7 @@
     document.addEventListener('DOMContentLoaded', function () {
       AOS.init({
         duration: 800,
-        once: true
+        once: false,
       });
     });
   </script>

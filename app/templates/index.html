@@ -7,13 +7,16 @@
 {# --- Page-specific styles (kept small) --- #}
 <style>
   .public-hero {
-    min-height: 70vh;
+    min-height: 80vh;
     border-radius: 1.5rem;
+    object-fit: cover;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     overflow: hidden;
     background:
-      linear-gradient(115deg, rgba(5,12,26,0.1), rgba(5,12,26,0.9)),
-      url("{{ url_for('static', filename='img/home.png') }}") center/cover no-repeat;
-    color: #f5f5f5;  /* make sure text is light */
+      url("{{ url_for('static', filename='img/weare-.jpg') }}") center/cover no-repeat;
+    color: #f5f5f5;  
   }
 
   .public-hero-content {
@@ -84,16 +87,16 @@
 </div>
 
 {# ============ ABOUT / OUR STORY ============ #}
-<div class="row g-4 mb-5">
-  <div class="col-lg-6 justify-content-center" data-aos="fade-right">
-    <div class="section-card p-4 h-100">
-      <h2 class="mb-3">Who we are</h2>
-      <p class="mb-3">
+<div class="row g-4 mb-5 justify-content-center">
+  <div class="col-lg-6 " data-aos="fade-right">
+   <div class="section-card p-4 h-100 d-flex flex-column justify-content-center">
+      <h2 class="mb-3 ">Who we are</h2>
+      <p class="mb-3 fs-5">
         Lodge Matariki 476 is part of Freemasonry in New Zealand. We bring
         together members from different backgrounds who share values of integrity,
         respect, and service.
       </p>
-      <p class="mb-0">
+      <p class="mb-0 fs-5">
         Our meetings combine tradition with modern life – a place to pause,
         connect, and do something meaningful for others.
       </p>
