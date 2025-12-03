@@ -1,5 +1,6 @@
 ## lodge-matarik476- 
-### using python, Jinja, Flask, PostgreSQL
+### using python, Jinja, Flask, PostgreSQL, Docker, CI/CD
+
 
 #### 1. Install Docker Desktop
 #### 2. Open a terminal in this folder

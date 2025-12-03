@@ -1,72 +1,34 @@
+version: "3.9"
+
 services:
   web:
     build: .
     ports:
-      - "8000:8000"        # host:container
+      - "8000:8000"              # host:container
     environment:
       DB_HOST: db
       DB_NAME: lodge
       DB_USER: postgres
       DB_PASSWORD: postgres
-
-      # any other env vars your app needs (FLASK_SECRET_KEY, etc.)
-      app.secret_key = '2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5'
-      app.config['UPLOAD_FOLDER'] = 'static/uploads'
-
+      FLASK_SECRET_KEY: "2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5"
+      UPLOAD_FOLDER: "static/uploads"
     depends_on:
       - db
 
   db:
     image: postgres:16
+    restart: always
     environment:
       POSTGRES_DB: lodge
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
     volumes:
-      # persist data
+      # persist db data
       - postgres_data:/var/lib/postgresql/data
-      # optional: auto-create tables from your SQL file
-      
-# -- -----------------------------------------------------
-# -- Table Lodge
-# -- -----------------------------------------------------
-
-CREATE DATABASE IF NOT EXISTS Lodge;
-USE Lodge;
-
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    username VARCHAR(80) UNIQUE NOT NULL CHECK (char_length(username) >= 5),
-    first_name VARCHAR(80) NOT NULL,
-    last_name VARCHAR(80) NOT NULL,
-    email VARCHAR(190) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    phone VARCHAR(40) CHECK (phone ~ '^[0-9+ ]*$'),
-    birth_date DATE,
-    profile_image VARCHAR(255),
-    role VARCHAR(20) NOT NULL DEFAULT 'member' CHECK (role IN ('member','admin')),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE whats_next (
-    id SERIAL PRIMARY KEY,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE events (
-    event_id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    event_date DATE NOT NULL,
-    start_time TIME NOT NULL,
-    location VARCHAR(255),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-      - ./app/database.psql:/docker-entrypoint-initdb.d/01-schema.sql
+      # run your schema on first startup
+      - ./app/database.psql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
 volumes:
   postgres_data:
