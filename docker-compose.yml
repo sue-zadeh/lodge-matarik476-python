@@ -23,12 +23,13 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       # persist db data
       - postgres_data:/var/lib/postgresql/data
       # run your schema on first startup
       - ./app/database.psql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
 
 volumes:
   postgres_data:

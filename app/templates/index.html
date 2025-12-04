@@ -7,7 +7,7 @@
 {# --- Page-specific styles (kept small) --- #}
 <style>
   .public-hero {
-    min-height: 80vh;
+    min-height: 85vh;
     border-radius: 1.5rem;
     object-fit: cover;
     background-size: cover;
@@ -15,7 +15,9 @@
     background-repeat: no-repeat;
     overflow: hidden;
     background:
-      url("{{ url_for('static', filename='img/weare-.jpg') }}") center/cover no-repeat;
+          linear-gradient(135deg, rgba(216, 192, 147, 0.15), rgba(9, 19, 39, 0.95)),
+
+      url("{{ url_for('static', filename='img/weare3.jpg') }}") center/cover no-repeat;
     color: #f5f5f5;  
   }
 
