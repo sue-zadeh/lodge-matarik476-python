@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Files for Members{% endblock %}
+
+{% block content %}
+<style>
+  .description-cell {
+      white-space: normal !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+      max-width: 250px; 
+  }
+</style>
+
+<div class="container-fluid py-4">
+  <h1 class="text-success mb-4">Files for Members</h1>
+
+  <!-- flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="row g-4">
+    <!-- LEFT: table -->
+    <div class="col-lg-7">
+      <div class="card shadow-lg h-100">
+        <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-folder-open me-2"></i>Files already sent</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>description</th>
+                  <th>Sent on</th>
+                  <th>By</th>
+                  <th>File</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% if files %}
+                {% for f in files %}
+                  <tr>
+                    <td class="description-cell">{{ f.subject }}</td>
+                    <td class="description-cell">{{ f.description }}</td>
+                    <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
+                    <td>{{ f.uploader }}</td>
+                    <td>
+                      <a href="{{ url_for('static', filename='files/' ~ f.filename) }}"
+                         class="btn btn-sm btn-outline-light" target="_blank">
+                        <i class="fas fa-download"></i> Open
+                      </a>
+                    </td>
+                    <td class="text-end">
+                      <a href="{{ url_for('admin_files', edit_id=f.file_id) }}"
+                         class="btn btn-sm btn-outline-warning me-1">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      <form method="post"
+                            action="{{ url_for('delete_file', file_id=f.file_id) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('Delete this file?');">
+                        <button class="btn btn-sm btn-outline-danger">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    No files have been sent yet.
+                  </td>
+                </tr>
+              {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: form -->
+    <div class="col-lg-5">
+      <div class="card shadow-lg h-100">
+        <div class="card-header bg-success text-light">
+          {% if file_to_edit %}
+            <i class="fas fa-edit me-2"></i>Edit file
+          {% else %}
+            <i class="fas fa-paper-plane me-2"></i>Send new file to members
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            From: <strong>{{ session['username'] }}</strong> (admin)
+          </p>
+
+          <form method="post" enctype="multipart/form-data" autocomplete="off">
+            {% if file_to_edit %}
+              <input type="hidden" name="file_id" value="{{ file_to_edit.file_id }}">
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="subject" class="form-label">Subject</label>
+              <input type="text"
+                     class="form-control"
+                     id="subject"
+                     name="subject"
+                     required
+                     value="{{ file_to_edit.subject if file_to_edit else '' }}">
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Notes / description (optional)</label>
+              <textarea class="form-control"
+                        id="description"
+                        name="description"
+                        rows="3"
+                        placeholder="Short info about the file">{{ file_to_edit.description if file_to_edit else '' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="file" class="form-label">
+                File {% if file_to_edit %}<span class="text-muted small">(leave empty to keep current file)</span>{% endif %}
+              </label>
+              <input class="form-control" type="file" id="file" name="file">
+              <div class="form-text">
+                Allowed: pdf, doc(x), xls(x), ppt(x), txt, png, jpg, jpeg
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 mt-2">
+              {% if file_to_edit %}
+                <i class="fas fa-save"></i> Save changes
+              {% else %}
+                <i class="fas fa-paper-plane"></i> Send file
+              {% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

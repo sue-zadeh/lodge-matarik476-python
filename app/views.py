@@ -18,8 +18,23 @@ PASSWORD_SALT = '1234abcd'
 hashing = Hashing(app)
 logging.basicConfig(level=logging.DEBUG)
 
+# profile/member photos
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# docs/files that admins send to members
+FILE_UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'files')
+app.config['FILE_UPLOAD_FOLDER'] = FILE_UPLOAD_FOLDER
+
+
+# ---allowed file
+ALLOWED_FILE_EXTENSIONS = {
+    'pdf', 'doc', 'docx', 'xls', 'xlsx',
+    'ppt', 'pptx', 'txt', 'png', 'jpg', 'jpeg'
+}
+
+def allowed_file_generic(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_FILE_EXTENSIONS
 
 
 
@@ -164,15 +179,25 @@ def register():
             flash('Database connection error', 'error')
             return redirect(url_for('register'))
 
-        cursor.execute("SELECT 1 FROM users WHERE username = %s", (username,))
-        account = cursor.fetchone()
+        # Check both username and email
+        cursor.execute("""
+            SELECT username, email
+            FROM users
+            WHERE username = %s OR email = %s
+        """, (username, email))
 
-        if account:
-            flash('Username already exists!', 'error')
+        existing = cursor.fetchone()
+
+        if existing:
+            if existing[0] == username:
+                flash('Username already exists!', 'error')
+            elif existing[1] == email:
+                flash('Email already registered!', 'error')
             cursor.close()
             conn.close()
             return redirect(url_for('register'))
 
+        # only reach this if NO existing user
         password_hash = hashing.hash_value(password, PASSWORD_SALT)
 
         cursor.execute(
@@ -241,45 +266,63 @@ def login():
 
 @app.route('/member/home')
 def member_home():
-    # only members can see this page
     if session.get('role') != 'member':
         return redirect(url_for('login'))
 
-    user = None
-    whats_next = None
-    user_id = session.get('user_id')
+    user_id = session['user_id']
 
-    if user_id:
-        cursor, conn = getCursor(dictionary=True)
+    cursor, conn = getCursor(dictionary=True)
 
-        # ---- get current user ----
-        cursor.execute(
-            """
-            SELECT user_id, username, first_name, last_name, profile_image, role
-            FROM users
-            WHERE user_id = %s
-            """,
-            (user_id,)
-        )
-        user = cursor.fetchone()
+    # --- member info ---
+    cursor.execute(
+        """
+        SELECT user_id, username, first_name, last_name, profile_image
+        FROM users
+        WHERE user_id = %s
+        """,
+        (user_id,)
+    )
+    user = cursor.fetchone()
 
-        # ---- get latest "what's next" message (if any) ----
-        cursor.execute(
-            """
-            SELECT content
-            FROM whats_next
-            ORDER BY created_at DESC
-            LIMIT 1
-            """
-        )
-        row = cursor.fetchone()
-        if row:
-            whats_next = row['content']
+        # --- admin note / "Message from Admin" (stored in whats_next table) ---
+    cursor.execute(
+        """
+        SELECT content AS note,
+               created_at AS updated_at
+        FROM whats_next
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        """
+    )
+    whats_next = cursor.fetchone()
 
-        cursor.close()
-        conn.close()
 
-    return render_template('home_member.html', user=user, whats_next=whats_next)
+    # --- NEW FILES notification data ---
+    cursor.execute(
+        """
+        SELECT f.file_id, f.subject, f.created_at
+        FROM files f
+        LEFT JOIN file_reads fr
+          ON fr.file_id = f.file_id AND fr.user_id = %s
+        WHERE fr.user_id IS NULL       -- not read yet by this user
+        ORDER BY f.created_at DESC
+        LIMIT 5
+        """,
+        (user_id,)
+    )
+    new_files = cursor.fetchall()
+    new_files_count = len(new_files)
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'home_member.html',
+        user=user,
+        whats_next=whats_next,
+        new_files=new_files,
+        new_files_count=new_files_count
+    )
 
 #-----Admin Home ------#
 
@@ -370,79 +413,90 @@ def profile():
 # ---- Edit Profile ---- #
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
+    # must be logged in
     if 'user_id' not in session:
-        flash('You must be logged in to edit your profile.', 'error')
         return redirect(url_for('login'))
+
+    user_id = session['user_id']
 
     cursor, conn = getCursor(dictionary=True)
 
-    # Always load current user first
-    cursor.execute("SELECT * FROM users WHERE user_id = %s", (session['user_id'],))
-    user = cursor.fetchone()
-
-    if not user:
-        cursor.close()
-        conn.close()
-        flash('User not found.', 'danger')
-        return redirect(url_for('home'))
-
     if request.method == 'POST':
-        # names must match your form fields
-        username    = request.form.get('username')
-        first_name  = request.form.get('fname')
-        last_name   = request.form.get('lname')
-        email       = request.form.get('email')
-        phone       = request.form.get('phone')
-        birth_date  = request.form.get('birth_date')   # yyyy-mm-dd from input[type=date]
+        username = request.form.get('username', '').strip()
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        birth_date = request.form.get('birth_date', None)
 
+        # --- check duplicates (other users) ---
+        cursor.execute(
+            """
+            SELECT user_id, username, email
+            FROM users
+            WHERE (username = %s OR email = %s)
+              AND user_id <> %s
+            """,
+            (username, email, user_id)
+        )
+        existing = cursor.fetchone()
+
+        if existing:
+            # someone else already has this username/email
+            if existing['username'] == username:
+                flash('Username already exists. Please choose another one.', 'error')
+            elif existing['email'] == email:
+                flash('Email already registered. Please use a different email.', 'error')
+
+            cursor.close()
+            conn.close()
+            return redirect(url_for('edit_profile'))
+
+        # --- handle optional profile image (if you have this in your form) ---
         file = request.files.get('profile_image')
+        profile_image = None
+        if file and file.filename:
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                profile_image = filename
+            else:
+                flash('File not allowed.', 'error')
+                cursor.close()
+                conn.close()
+                return redirect(url_for('edit_profile'))
 
-        # default: keep existing image
-        profile_image = user.get('profile_image')
-
-        # if a new file uploaded, save and replace
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            profile_image = filename
-
-        cursor.execute("""
+        # --- finally update the record ---
+        cursor.execute(
+            """
             UPDATE users
             SET username = %s,
                 first_name = %s,
-                last_name = %s,
-                email = %s,
-                phone = %s,
+                last_name  = %s,
+                email      = %s,
+                phone      = %s,
                 birth_date = %s,
-                profile_image = %s
+                profile_image = COALESCE(%s, profile_image)
             WHERE user_id = %s
-        """, (
-            username,
-            first_name,
-            last_name,
-            email,
-            phone,
-            birth_date,
-            profile_image,
-            session['user_id']
-        ))
+            """,
+            (username, first_name, last_name,
+             email, phone, birth_date, profile_image, user_id)
+        )
+
         conn.commit()
         cursor.close()
         conn.close()
 
-        flash('Profile updated successfully!', 'success')
-        return redirect(url_for('profile'))
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('member_home'))  # or wherever you send them
 
-    # GET: prepare data for the form
-    if user.get('birth_date'):
-        try:
-            user['birth_date'] = user['birth_date'].strftime('%Y-%m-%d')
-        except AttributeError:
-            pass
-
+    # GET: load current user data
+    cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+    user = cursor.fetchone()
     cursor.close()
     conn.close()
-    return render_template("edit-profile.html", user=user)
+
+    return render_template('edit-profile.html', user=user)
 
 
 #------- Change Picture in the Profile --------------------#
@@ -720,3 +774,176 @@ def admin_delete_user(user_id):
         conn.close()
 
     return redirect(url_for('admin_manage_users'))
+  
+  
+  
+# ---------- Admin files page ---------- #
+
+@app.route('/admin/files', methods=['GET', 'POST'])
+def admin_files():
+    # only admins can access
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    edit_id = request.args.get('edit_id', type=int)
+
+    cursor, conn = getCursor(dictionary=True)
+
+    # ===== POST: create OR update a file =====
+    if request.method == 'POST':
+        file_id = request.form.get('file_id')  # empty when creating
+
+        subject = request.form.get('subject', '').strip()
+        description = request.form.get('description', '').strip()
+        upload = request.files.get('file')
+
+        if not subject:
+            flash('Subject is required.', 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('admin_files'))
+
+        # we only require a file when creating new
+        if not file_id and (not upload or upload.filename == ''):
+            flash('Please choose a file to upload.', 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('admin_files'))
+
+        filename_on_disk = None
+
+        if upload and upload.filename:
+            if not allowed_file_generic(upload.filename):
+                flash('File type not allowed.', 'error')
+                cursor.close()
+                conn.close()
+                return redirect(url_for('admin_files'))
+
+            # unique-ish filename
+            safe_name = secure_filename(upload.filename)
+            timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+            filename_on_disk = f"{timestamp}_{safe_name}"
+            upload.save(os.path.join(app.config['FILE_UPLOAD_FOLDER'], filename_on_disk))
+
+        # --- UPDATE existing file ---
+        if file_id:
+            cursor.execute(
+                """
+                UPDATE files
+                SET subject = %s,
+                    description = %s,
+                    filename = COALESCE(%s, filename)
+                WHERE file_id = %s
+                """,
+                (subject, description, filename_on_disk, file_id)
+            )
+            flash('File updated successfully.', 'success')
+
+        # --- CREATE new file ---
+        else:
+            cursor.execute(
+                """
+                INSERT INTO files (subject, description, filename, uploader_id)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (subject, description, filename_on_disk, session['user_id'])
+            )
+            flash('File sent to members.', 'success')
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return redirect(url_for('admin_files'))
+
+    # ===== GET: load all files for the table =====
+    cursor.execute(
+        """
+        SELECT f.file_id,
+               f.subject,
+               f.description,
+               f.filename,
+               f.created_at,
+               u.username AS uploader
+        FROM files f
+        JOIN users u ON f.uploader_id = u.user_id
+        ORDER BY f.created_at DESC
+        """
+    )
+    files = cursor.fetchall()
+
+    # if editing, load that row to pre-fill the form
+    file_to_edit = None
+    if edit_id:
+        cursor.execute(
+            """
+            SELECT file_id, subject, description, filename, created_at
+            FROM files
+            WHERE file_id = %s
+            """,
+            (edit_id,)
+        )
+        file_to_edit = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return render_template('admin_files.html', files=files, file_to_edit=file_to_edit)
+
+#------------ Delete file -----------#
+
+@app.route('/admin/files/<int:file_id>/delete', methods=['POST'])
+def delete_file(file_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor()
+    cursor.execute("DELETE FROM files WHERE file_id = %s", (file_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash('File deleted.', 'success')
+    return redirect(url_for('admin_files'))
+  
+  # ------------ Member/Files page -------#
+@app.route('/member/files')
+def member_files():
+    if session.get('role') != 'member':
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    cursor, conn = getCursor(dictionary=True)
+
+    # all files
+    cursor.execute(
+        """
+        SELECT f.file_id,
+               f.subject,
+               f.description,
+               f.filename,
+               f.created_at,
+               u.username AS uploader
+        FROM files f
+        JOIN users u ON f.uploader_id = u.user_id
+        ORDER BY f.created_at DESC
+        """
+    )
+    files = cursor.fetchall()
+
+    # mark them as "read" for this member
+    for f in files:
+        cursor.execute(
+            """
+            INSERT INTO file_reads (user_id, file_id)
+            VALUES (%s, %s)
+            ON CONFLICT (user_id, file_id) DO NOTHING
+            """,
+            (user_id, f['file_id'])
+        )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return render_template('member_files.html', files=files)

@@ -19,7 +19,7 @@
         {% endif %}
       {% endwith %}-->
 
-      <form action="{{ url_for('register') }}" method="post" enctype="multipart/form-data" class="mt-4">
+      <form action="{{ url_for('register') }}" method="post" enctype="multipart/form-data" class="mt-4" autocomplete="off">
         <!-- Username -->
         <div class="form-group mb-3">
           <label for="username"><i class="fas fa-user"></i> Username</label>
@@ -115,7 +115,9 @@
             placeholder="Password"
             required
             pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            autocomplete="new-password"
           >
+          
           <span onclick="togglePassword('password', this)"
            style="position:absolute; right:15px; top:38px; cursor:pointer;">
           <i class="fas fa-eye text-secondary"></i>

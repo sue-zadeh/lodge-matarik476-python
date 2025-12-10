@@ -4,6 +4,19 @@
 
 {% block content %}
 <div class="container mt-4">
+<!--new file notification-->
+  {% if new_files_count and new_files_count > 0 %}
+  <div class="alert alert-info d-flex justify-content-between align-items-center">
+    <div>
+      <strong>You have {{ new_files_count }} new file{{ 's' if new_files_count > 1 else '' }}.</strong>
+      <span class="ms-2">Latest: "{{ new_files[0].subject }}"</span>
+    </div>
+    <a href="{{ url_for('member_files') }}" class="btn btn-sm btn-outline-dark">
+      <i class="fas fa-folder-open"></i> Open files
+    </a>
+  </div>
+{% endif %}
+
 
   <!-- WELCOME + ANNOUNCEMENTS IN ONE ROW -->
   <div class="row mb-4 g-4">
@@ -27,7 +40,7 @@
             Welcome {{ user.first_name }} {{ user.last_name }}
           </h6>
           <span class="badge bg-warning text-dark">
-            {{ user.role|capitalize }} Member
+            {{ user.role|capitalize }}Member 
           </span>
         </div>
       </div>
@@ -130,13 +143,13 @@
     </div> -->
 
     <div class="col-md-4" data-aos="fade-down-left" data-aos="fade-down-left">
-      <a href="#" class="text-decoration-none">
+      <a href="{{ url_for('member_files')}}" class="text-decoration-none">
         <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
           <div class="card-body text-center d-flex flex-column justify-content-between">
             <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
             <h5 class="card-title">Files</h5>
             <p class="card-text small">
-              Minutes, documents, and resources (coming soon).
+              Minutes, documents, and resources
             </p>
           </div>
         </div>
@@ -144,10 +157,10 @@
     </div>
   </div>
 
-  <!-- WHAT'S NEXT (you can keep or remove later) -->
+  <!-- WHAT'S NEXT -message from Admin -->
 <div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm mt-4" data-aos="fade-down-left">
   <h4 class="text-warning">
-    <i class="fas fa-star"></i> What’s Happening Next( A message from admin)
+    <i class="fas fa-star"></i> Message from Admin
   </h4>
 
   {% if whats_next %}
@@ -155,9 +168,9 @@
       {{ whats_next }}
     </p>
   {% else %}
-    <p class="text-secondary mt-2">
-      No extra notes from the lodge yet. Please check again later.
-    </p>
+<p class="card-text">
+  {{ whats_next.note if whats_next else 'No message from admin yet.' }}
+</p>
   {% endif %}
 </div>
 

@@ -3,10 +3,7 @@
 -- Table Lodge
 -- -----------------------------------------------------
 
-CREATE DATABASE IF NOT EXISTS Lodge;
-USE Lodge;
-
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(80) UNIQUE NOT NULL CHECK (char_length(username) >= 5),
     first_name VARCHAR(80) NOT NULL,
@@ -22,13 +19,13 @@ CREATE TABLE users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE whats_next (
+CREATE TABLE IF NOT EXISTS whats_next (
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     event_id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,

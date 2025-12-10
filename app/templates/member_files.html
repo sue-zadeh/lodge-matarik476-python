@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Files{% endblock %}
+
+{% block content %}
+<style>
+  .description-cell {
+      white-space: normal !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+      max-width: 250px; 
+  }
+</style>
+
+<div class="container py-4">
+  <h1 class="text-success mb-4">Files from Lodge</h1>
+
+  <div class="card shadow">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>description</th>
+              <th>Sent on</th>
+              <th>From</th>
+              <th class="text-end">File</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if files %}
+            {% for f in files %}
+              <tr>
+                <td class="description-cell">{{ f.subject }}</td>
+                <td class="description-cell">{{ f.description }}</td>
+                
+                <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
+                <td>{{ f.uploader }}</td>
+                <td class="text-end">
+                  <a href="{{ url_for('static', filename='files/' ~ f.filename) }}"
+                     class="btn btn-sm btn-outline-light"
+                     target="_blank">
+                    <i class="fas fa-download"></i> Open
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">
+                No files yet.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

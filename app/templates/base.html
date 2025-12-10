@@ -78,7 +78,12 @@
             margin-right: 10px;
         }
 
-       
+       .nav-link.active {
+    color: #00ff99 !important;
+    border-bottom: 2px solid #00ff99;
+    font-weight: 600;
+}
+
         .navbar-nav .nav-link:hover,
         .navbar-nav .nav-link.active {
             color: #cfa14a;
@@ -242,6 +247,14 @@
     box-shadow: 0 12px 30px rgba(0,0,0,0.45);
     border-color: #cfa14a;
   }
+  /* Files */
+  .description-cell {
+      white-space: normal !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+      max-width: 250px; 
+  }
+
   
 </style>
 </head>
@@ -298,13 +311,14 @@
       <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="#">Our Story</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}"" href="#">Calendar</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}" href="#">Calendar</a>
     </li>
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'announcements' %}active{% endif %}" href="#">Announcements</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'files' %}active{% endif %}" href="#">Files</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'member_files' %}active{% endif %}" href="{{ url_for('member_files') }}">Files</a>
+
     </li>
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
@@ -329,7 +343,7 @@
       <a class="nav-link nav-link-underline {% if request.endpoint == 'announcements' %}active{% endif %}" href="#">Announcements</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'files' %}active{% endif %}" href="#">Files</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'admin_files' %}active{% endif %} " href="{{ url_for('admin_files') }}">Files</a>
     </li>
     <li class="nav-item dropdown">
       <a class="nav-link dropdown-toggle {% if request.endpoint == 'admin' %}active{% endif %}" href="#" data-bs-toggle="dropdown">
