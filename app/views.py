@@ -10,6 +10,9 @@ from datetime import datetime
 from app import app
 from app.connect import get_db  # our PostgreSQL connection
 from datetime import timedelta
+from email.message import EmailMessage
+import smtplib
+
 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
@@ -264,6 +267,8 @@ def login():
 
 # ------ Routes for home_members and home_admins ------ #
 
+# ------ Routes for home_members and home_admins ------ #
+
 @app.route('/member/home')
 def member_home():
     if session.get('role') != 'member':
@@ -284,18 +289,16 @@ def member_home():
     )
     user = cursor.fetchone()
 
-        # --- admin note / "Message from Admin" (stored in whats_next table) ---
+    # --- Message from Admin (admin_messages table) ---
     cursor.execute(
         """
-        SELECT content AS note,
-               created_at AS updated_at
-        FROM whats_next
+        SELECT note, created_at
+        FROM admin_messages
         ORDER BY created_at DESC, id DESC
         LIMIT 1
         """
     )
-    whats_next = cursor.fetchone()
-
+    whats_next = cursor.fetchone()   # can be None
 
     # --- NEW FILES notification data ---
     cursor.execute(
@@ -324,7 +327,8 @@ def member_home():
         new_files_count=new_files_count
     )
 
-#-----Admin Home ------#
+
+# ----- Admin Home ------ #
 
 @app.route('/admin/home')
 def admin_home():
@@ -350,18 +354,18 @@ def admin_home():
         )
         user = cursor.fetchone()
 
-        # Get last "what's next" message
+        # Get last "Message from Admin"
         cursor.execute(
             """
-            SELECT content
-            FROM whats_next
+            SELECT note
+            FROM admin_messages
             ORDER BY created_at DESC, id DESC
             LIMIT 1
             """
         )
         row = cursor.fetchone()
         if row:
-            latest_note = row["content"]
+            latest_note = row["note"]
 
         cursor.close()
         conn.close()
@@ -369,6 +373,7 @@ def admin_home():
     return render_template('home_admin.html', user=user, latest_note=latest_note)
 
 # ---- logout ---- #
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -947,3 +952,56 @@ def member_files():
     conn.close()
 
     return render_template('member_files.html', files=files)
+
+
+# ---------- Contact us------#
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        message = request.form.get('message', '').strip()
+
+        if not name or not email or not message:
+            flash('Please fill in your name, email, and message.', 'error')
+            return redirect(url_for('contact'))
+
+        body = (
+            f"New enquiry from Lodge website\n\n"
+            f"Name: {name}\n"
+            f"Email: {email}\n"
+            f"Phone: {phone}\n\n"
+            f"Message:\n{message}\n"
+        )
+
+        # send email (example uses Gmail SMTP; replace with real settings)
+        try:
+            send_email("New enquiry from Lodge website", body)
+            flash('Thank you – your message has been sent.', 'success')
+        except Exception as e:
+            # log(e) if you want
+            flash('Sorry, there was a problem sending your message.', 'error')
+
+        return redirect(url_for('contact'))
+
+    return render_template('contact.html')
+  
+  #------------ Send Email ------#
+  
+def send_email(subject, body):
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = os.environ.get('MAIL_FROM')      # e.g. Gmail
+    msg['To'] = os.environ.get('MAIL_TO')          # lodge email
+    msg.set_content(body)
+
+    # Example Gmail settings – change to their provider:
+    smtp_user = os.environ.get('MAIL_USERNAME')
+    smtp_pass = os.environ.get('MAIL_PASSWORD')
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(smtp_user, smtp_pass)
+        smtp.send_message(msg)
+

@@ -254,6 +254,22 @@
       overflow-wrap: break-word !important;
       max-width: 250px; 
   }
+/*Contact us */
+
+.contact-hero {
+  background: #000 url("{{ url_for('static', filename='img/nz-map-bg.png') }}") center/cover no-repeat;
+  color: #fff;
+}
+
+.contact-form .form-control {
+  background-color: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+.contact-form .form-control::placeholder {
+  color: rgba(255,255,255,0.6);
+}
 
   
 </style>
@@ -286,13 +302,13 @@
       <a class="nav-link nav-link-underline {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}"" href="#">About Us</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}" href="#">About Us</a>
     </li>
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="#">Our Story</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'contact' %}active{% endif %}" href="#">Contact Us</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'contact' %}active{% endif %}"  href="{{ url_for('contact') }}">Contact Us</a>
     </li>
 
     <li class="nav-item ms-3">
@@ -401,6 +417,11 @@
       });
     });
   </script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+  AOS.init();
+</script>
+
    <script>
   function togglePassword(inputId, spanEl) {
     const input = document.getElementById(inputId);

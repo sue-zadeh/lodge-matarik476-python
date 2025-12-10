@@ -3,18 +3,35 @@
 {% block title %}Member Home{% endblock %}
 
 {% block content %}
+
+<style>
+.new-file-alert {
+    background: rgba(52, 152, 219, 0.15);  /* Light blue but matching the dark theme */
+    border-left: 4px solid #f1c40f;        /* Gold accent */
+    border-radius: 8px;
+    color: #fff;
+}
+.new-file-alert a:hover {
+    background-color: #f1c40f !important;
+    color: #000 !important;
+}
+</style>
+
 <div class="container mt-4">
 <!--new file notification-->
   {% if new_files_count and new_files_count > 0 %}
-  <div class="alert alert-info d-flex justify-content-between align-items-center">
-    <div>
-      <strong>You have {{ new_files_count }} new file{{ 's' if new_files_count > 1 else '' }}.</strong>
-      <span class="ms-2">Latest: "{{ new_files[0].subject }}"</span>
+<div class="alert new-file-alert d-flex align-items-center justify-content-between shadow-sm mb-3" data-aos="fade-up">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-file-alt me-2 text-warning"></i>
+        <span>You have {{ new_files_count }} new {{ 'file' if new_files_count == 1 else 'files' }}.</span>
+        {% if new_files and new_files[0].subject %}
+            <span class="ms-2 text-light small">Latest: "{{ new_files[0].subject }}"</span>
+        {% endif %}
     </div>
-    <a href="{{ url_for('member_files') }}" class="btn btn-sm btn-outline-dark">
-      <i class="fas fa-folder-open"></i> Open files
-    </a>
-  </div>
+
+    <a href="{{ url_for('member_files') }}" class="btn btn-sm btn-outline-light">Open files</a>
+</div>
+
 {% endif %}
 
 
@@ -23,7 +40,7 @@
 
     <!-- WELCOME CARD (LEFT) -->
     <div class="col-md-6">
-      <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift h-100" data-aos="fade-down-right" >
+      <div class="bg-dark rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between border border-secondary" data-aos="fade-down-right" >
         <img
           src="{% if user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
@@ -52,7 +69,7 @@
         <div>
           <h4 class="text-warning mb-2">
             <i class="fas fa-bullhorn me-2"></i> Lodge Announcements
-          </h4>
+             </h4>
           <p class="mb-2 text-light">
             Stay up to date with meeting nights, special events and important lodge news.
           </p>
@@ -160,19 +177,21 @@
   <!-- WHAT'S NEXT -message from Admin -->
 <div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm mt-4" data-aos="fade-down-left">
   <h4 class="text-warning">
-    <i class="fas fa-star"></i> Message from Admin
+          <i class="fas fa-bullhorn text-warning fs-2"></i> Message from Admin
   </h4>
 
   {% if whats_next %}
-    <p class="text-light mt-2 fs-4">
-      {{ whats_next }}
-    </p>
-  {% else %}
-<p class="card-text">
-  {{ whats_next.note if whats_next else 'No message from admin yet.' }}
-</p>
-  {% endif %}
-</div>
+  <div class="alert alert-warning bg-dark border-warning text-light mt-3">
+    <i class="fas fa-star me-2"></i>
+    {{ whats_next.note }}
+    {# or whats_next.content if column is called content #}
+  </div>
+{% else %}
+  <div class="alert alert-secondary bg-dark border-secondary text-muted mt-3">
+    No message from admin yet.
+  </div>
+{% endif %}
+
 
 </div>
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Contact Us{% endblock %}
+
+{% block content %}
+<section class="contact-hero" data-aos="fade-up">
+  <div class="container text-center py-5">
+    <h1 class="display-5 mb-4">GET IN TOUCH</h1>
+
+    <p class="mb-2"><i class="fas fa-phone-alt me-2"></i>Phone: 021 000 0000</p>
+    <p class="mb-2">
+      <i class="fas fa-envelope me-2"></i>
+      Email: <a href="mailto:info@smartpanelhomes.co.nz">info@lodgematarik476.co.nz</a>
+    </p>
+    <p class="mb-4">
+      <i class="fas fa-map-marker-alt me-2"></i>
+      Address: Lodge Rooms, 123 Demo Street, Auckland
+    </p>
+
+    <div class="row justify-content-center mt-4" data-aos="fade-up" data-aos-delay="150">
+      <div class="col-md-5 mb-3">
+        <form method="post" class="contact-form">
+          {{ csrf_token() if csrf_token is defined }}
+          <input class="form-control mb-3" type="text" name="name" placeholder="Name" required>
+          <input class="form-control mb-3" type="email" name="email" placeholder="Email" required>
+          <input class="form-control mb-3" type="text" name="phone" placeholder="Phone">
+      </div>
+      <div class="col-md-5 mb-3">
+          <textarea class="form-control mb-3" name="message" rows="7" placeholder="Your Message" required></textarea>
+          <button type="submit" class="btn btn-danger px-5">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+=

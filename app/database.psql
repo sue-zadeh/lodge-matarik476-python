@@ -35,3 +35,27 @@ CREATE TABLE IF NOT EXISTS events (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS admin_messages (
+    id        SERIAL PRIMARY KEY,
+    note      TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Files that admins send to members
+CREATE TABLE IF NOT EXISTS files (
+    file_id     SERIAL PRIMARY KEY,
+    subject     VARCHAR(255) NOT NULL,
+    description TEXT,
+    filename    VARCHAR(255) NOT NULL,
+    uploader_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Which member has "read" which file (for new-files notifications)
+CREATE TABLE IF NOT EXISTS file_reads (
+    user_id  INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    file_id  INTEGER NOT NULL REFERENCES files(file_id) ON DELETE CASCADE,
+    read_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, file_id)
+);
