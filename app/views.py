@@ -338,6 +338,7 @@ def admin_home():
 
     user = None
     latest_note = ""   # default if there is no message yet
+    contact_messages = []
     user_id = session.get('user_id')
 
     if user_id:
@@ -354,7 +355,7 @@ def admin_home():
         )
         user = cursor.fetchone()
 
-        # Get last "Message from Admin"
+        # Get last "Message from Admin" (from admin_messages table)
         cursor.execute(
             """
             SELECT note
@@ -367,11 +368,27 @@ def admin_home():
         if row:
             latest_note = row["note"]
 
+        # Get recent contact form messages (for dashboard block)
+        cursor.execute(
+            """
+            SELECT id, name, email, phone, message, created_at
+            FROM contact_messages
+            ORDER BY created_at DESC
+            LIMIT 5
+            """
+        )
+        contact_messages = cursor.fetchall()
+
         cursor.close()
         conn.close()
 
-    return render_template('home_admin.html', user=user, latest_note=latest_note)
-
+    return render_template(
+        'home_admin.html',
+        user=user,
+        latest_note=latest_note,
+        contact_messages=contact_messages,
+    )
+    
 # ---- logout ---- #
 
 @app.route('/logout')
@@ -954,7 +971,7 @@ def member_files():
     return render_template('member_files.html', files=files)
 
 
-# ---------- Contact us------#
+# ---------- Contact us ------ #
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
@@ -968,6 +985,25 @@ def contact():
             flash('Please fill in your name, email, and message.', 'error')
             return redirect(url_for('contact'))
 
+        # -------- Save to DB -------- #
+        try:
+            cursor, conn = getCursor()
+            cursor.execute(
+                """
+                INSERT INTO contact_messages (name, email, phone, message)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (name, email, phone, message)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            # If DB fails we still try to send email, but you could log e
+            flash('Sorry, there was a problem saving your message.', 'error')
+            return redirect(url_for('contact'))
+
+        # -------- Prepare email body -------- #
         body = (
             f"New enquiry from Lodge website\n\n"
             f"Name: {name}\n"
@@ -976,30 +1012,35 @@ def contact():
             f"Message:\n{message}\n"
         )
 
-        # send email (example uses Gmail SMTP; replace with real settings)
+        # -------- Send email -------- #
         try:
             send_email("New enquiry from Lodge website", body)
             flash('Thank you – your message has been sent.', 'success')
         except Exception as e:
-            # log(e) if you want
-            flash('Sorry, there was a problem sending your message.', 'error')
+            # You can log(e) if you want
+            flash('Your message was saved, but there was a problem sending email.', 'error')
 
         return redirect(url_for('contact'))
 
     return render_template('contact.html')
   
-  #------------ Send Email ------#
-  
+  # ------------ Send Email ------ #
+
 def send_email(subject, body):
     msg = EmailMessage()
     msg['Subject'] = subject
-    msg['From'] = os.environ.get('MAIL_FROM')      # e.g. Gmail
-    msg['To'] = os.environ.get('MAIL_TO')          # lodge email
+
+    # Fallback to lodge.admin@gmail.com if env variables are not set
+    from_addr = os.environ.get('MAIL_FROM', 'lodge.admin@gmail.com')
+    to_addr = os.environ.get('MAIL_TO', 'lodge.admin@gmail.com')
+
+    msg['From'] = from_addr
+    msg['To'] = to_addr
     msg.set_content(body)
 
-    # Example Gmail settings – change to their provider:
-    smtp_user = os.environ.get('MAIL_USERNAME')
-    smtp_pass = os.environ.get('MAIL_PASSWORD')
+    # Example Gmail settings – change to their provider if needed
+    smtp_user = os.environ.get('MAIL_USERNAME', 'lodge.admin@gmail.com')
+    smtp_pass = os.environ.get('MAIL_PASSWORD')  # put this in .env
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
         smtp.login(smtp_user, smtp_pass)

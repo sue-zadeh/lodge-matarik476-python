@@ -40,7 +40,7 @@
 
     <!-- WELCOME CARD (LEFT) -->
     <div class="col-md-6">
-      <div class="bg-dark rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between border border-secondary" data-aos="fade-down-right" >
+      <div class="bg-dark rounded-3 shadow-lg p-4 border border-secondary" data-aos="fade-down-right" >
         <img
           src="{% if user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}

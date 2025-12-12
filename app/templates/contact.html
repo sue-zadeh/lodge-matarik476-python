@@ -17,18 +17,22 @@
     </p>
 
     <div class="row justify-content-center mt-4" data-aos="fade-up" data-aos-delay="150">
-      <div class="col-md-5 mb-3">
+      <div class="col-md-5 mb-3" data-aos="fade-up-right">
         <form method="post" class="contact-form">
           {{ csrf_token() if csrf_token is defined }}
           <input class="form-control mb-3" type="text" name="name" placeholder="Name" required>
           <input class="form-control mb-3" type="email" name="email" placeholder="Email" required>
           <input class="form-control mb-3" type="text" name="phone" placeholder="Phone">
       </div>
-      <div class="col-md-5 mb-3">
+      <div class="col-md-5 mb-3" data-aos="fade-up-left">
           <textarea class="form-control mb-3" name="message" rows="7" placeholder="Your Message" required></textarea>
-          <button type="submit" class="btn btn-danger px-5">Submit</button>
+        </div>
+<div class="text-center">
+    <button type="submit" class="btn btn-warning px-4" style="min-width: 180px;">
+        Submit
+    </button>
+</div>
         </form>
-      </div>
     </div>
   </div>
 </section>
