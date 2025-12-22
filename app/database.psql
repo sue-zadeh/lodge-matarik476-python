@@ -84,3 +84,11 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- tracks “NEW” badge per member
+CREATE TABLE IF NOT EXISTS event_reads (
+  event_id INT NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (event_id, user_id)
+);
+
