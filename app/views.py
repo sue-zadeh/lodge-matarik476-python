@@ -6,7 +6,7 @@ from flask_hashing import Hashing
 import logging
 import psycopg2
 import psycopg2.extras
-from datetime import datetime
+from datetime import datetime, date
 from app import app
 from app.connect import get_db  # our PostgreSQL connection
 from datetime import timedelta
@@ -265,7 +265,6 @@ def login():
     return render_template("login.html")
 
 
-# ------ Routes for home_members and home_admins ------ #
 
 # ------ Routes for home_members and home_admins ------ #
 
@@ -326,6 +325,29 @@ def member_home():
         new_files=new_files,
         new_files_count=new_files_count
     )
+
+#--- show event + NEW badge ----#
+active_event = get_active_event(cursor)
+
+event_is_new = False
+if active_event:
+    cursor.execute("""
+        SELECT 1
+        FROM event_reads
+        WHERE event_id = %s AND user_id = %s
+        LIMIT 1
+    """, (active_event["event_id"], user_id))
+    seen = cursor.fetchone()
+    event_is_new = (seen is None)
+return render_template(
+    'home_member.html',
+    user=user,
+    active_event=active_event,
+    event_is_new=event_is_new,
+    new_files=new_files,
+    new_files_count=new_files_count,
+    # whatever else you already pass...
+)
 
 
 # ----- Admin Home ------ #
@@ -1046,3 +1068,120 @@ def send_email(subject, body):
         smtp.login(smtp_user, smtp_pass)
         smtp.send_message(msg)
 
+ #---- get “active event for member home” ---#
+ 
+def get_active_event(cursor):
+    # 1) pinned event (still future or today; you can allow pinned past if you want)
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE is_pinned = TRUE
+          AND (event_date > CURRENT_DATE OR event_date = CURRENT_DATE)
+        ORDER BY event_date ASC, start_time ASC, updated_at DESC
+        LIMIT 1
+    """)
+    pinned = cursor.fetchone()
+    if pinned:
+        return pinned
+
+    # 2) next upcoming event
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE (event_date > CURRENT_DATE)
+           OR (event_date = CURRENT_DATE AND start_time >= CURRENT_TIME)
+        ORDER BY event_date ASC, start_time ASC
+        LIMIT 1
+    """)
+    return cursor.fetchone()
+  
+  #-- Member: mark event as seen ----#
+  
+  @app.route('/member/events/<int:event_id>/seen', methods=['POST'])
+def mark_event_seen(event_id):
+    if session.get('role') != 'member':
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    cursor, conn = getCursor(dictionary=True)
+
+    cursor.execute("""
+        INSERT INTO event_reads (event_id, user_id)
+        VALUES (%s, %s)
+        ON CONFLICT (event_id, user_id) DO NOTHING
+    """, (event_id, user_id))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    return ("", 204)
+
+
+#-- 1- Admin manage events page -----#
+@app.route('/admin/events', methods=['GET', 'POST'])
+def admin_events():
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor(dictionary=True)
+    admin_id = session.get('user_id')
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        event_date = request.form.get('event_date', '').strip()
+        start_time = request.form.get('start_time', '').strip()
+        end_time = request.form.get('end_time', '').strip()
+        location = request.form.get('location', '').strip()
+        is_pinned = True if request.form.get('is_pinned') else False
+
+        if not title or not event_date or not start_time:
+            flash('Please fill in Title, Date, and Start time.', 'error')
+            cursor.close(); conn.close()
+            return redirect(url_for('admin_events'))
+
+        # if pin is checked, unpin others (only one pinned at a time)
+        if is_pinned:
+            cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
+
+        cursor.execute("""
+            INSERT INTO events (title, description, event_date, start_time, end_time, location, is_pinned, created_by)
+            VALUES (%s, %s, %s, %s, NULLIF(%s,''), %s, %s, %s)
+        """, (title, description, event_date, start_time, end_time, location, is_pinned, admin_id))
+        conn.commit()
+
+        flash('Event created.', 'success')
+
+    cursor.execute("""
+        SELECT e.*, u.username AS created_by_name
+        FROM events e
+        LEFT JOIN users u ON u.user_id = e.created_by
+        ORDER BY e.is_pinned DESC, e.event_date DESC, e.start_time DESC
+    """)
+    events = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    return render_template('admin_events.html', events=events)
+
+#---- 2- Admin pin/unpin event -----#
+
+@app.route('/admin/events/<int:event_id>/pin', methods=['POST'])
+def admin_pin_event(event_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor(dictionary=True)
+
+    # unpin all, pin selected
+    cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
+    cursor.execute("UPDATE events SET is_pinned = TRUE, updated_at = NOW() WHERE event_id = %s", (event_id,))
+    conn.commit()
+
+    # important: event updated => members should see NEW badge again
+    cursor.execute("DELETE FROM event_reads WHERE event_id = %s", (event_id,))
+    conn.commit()
+
+    cursor.close(); conn.close()
+    flash('Event pinned to top.', 'success')
+    return redirect(url_for('admin_events'))
