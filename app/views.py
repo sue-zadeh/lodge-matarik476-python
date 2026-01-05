@@ -273,47 +273,49 @@ def member_home():
     if session.get('role') != 'member':
         return redirect(url_for('login'))
 
-    user_id = session['user_id']
+    user_id = session.get('user_id')
 
     cursor, conn = getCursor(dictionary=True)
 
     # --- member info ---
-    cursor.execute(
-        """
-        SELECT user_id, username, first_name, last_name, profile_image
+    cursor.execute("""
+        SELECT user_id, username, first_name, last_name, profile_image, role
         FROM users
         WHERE user_id = %s
-        """,
-        (user_id,)
-    )
+    """, (user_id,))
     user = cursor.fetchone()
-
-    # --- Message from Admin (admin_messages table) ---
-    cursor.execute(
-        """
-        SELECT note, created_at
-        FROM admin_messages
-        ORDER BY created_at DESC, id DESC
-        LIMIT 1
-        """
-    )
-    whats_next = cursor.fetchone()   # can be None
 
     # --- NEW FILES notification data ---
     cursor.execute(
-        """
-        SELECT f.file_id, f.subject, f.created_at
-        FROM files f
-        LEFT JOIN file_reads fr
-          ON fr.file_id = f.file_id AND fr.user_id = %s
-        WHERE fr.user_id IS NULL       -- not read yet by this user
-        ORDER BY f.created_at DESC
-        LIMIT 5
-        """,
-        (user_id,)
-    )
+    """
+    SELECT f.file_id, f.subject, f.created_at
+    FROM files f
+    LEFT JOIN file_reads fr
+      ON fr.file_id = f.file_id AND fr.user_id = %s
+    WHERE fr.user_id IS NULL
+    AND f.is_admin_only = FALSE
+    ORDER BY f.created_at DESC
+    LIMIT 5
+    """,
+    (user_id,)
+)
+
     new_files = cursor.fetchall()
     new_files_count = len(new_files)
+
+    # --- show event + NEW badge ---
+    active_event = get_active_event(cursor)
+
+    event_is_new = False
+    if active_event:
+        cursor.execute("""
+            SELECT 1
+            FROM event_reads
+            WHERE event_id = %s AND user_id = %s
+            LIMIT 1
+        """, (active_event["event_id"], user_id))
+        seen = cursor.fetchone()
+        event_is_new = (seen is None)
 
     cursor.close()
     conn.close()
@@ -321,33 +323,11 @@ def member_home():
     return render_template(
         'home_member.html',
         user=user,
-        whats_next=whats_next,
+        active_event=active_event,
+        event_is_new=event_is_new,
         new_files=new_files,
         new_files_count=new_files_count
     )
-
-#--- show event + NEW badge ----#
-active_event = get_active_event(cursor)
-
-event_is_new = False
-if active_event:
-    cursor.execute("""
-        SELECT 1
-        FROM event_reads
-        WHERE event_id = %s AND user_id = %s
-        LIMIT 1
-    """, (active_event["event_id"], user_id))
-    seen = cursor.fetchone()
-    event_is_new = (seen is None)
-return render_template(
-    'home_member.html',
-    user=user,
-    active_event=active_event,
-    event_is_new=event_is_new,
-    new_files=new_files,
-    new_files_count=new_files_count,
-    # whatever else you already pass...
-)
 
 
 # ----- Admin Home ------ #
@@ -823,83 +803,78 @@ def admin_delete_user(user_id):
   
 # ---------- Admin files page ---------- #
 
+
 @app.route('/admin/files', methods=['GET', 'POST'])
 def admin_files():
-    # only admins can access
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
     edit_id = request.args.get('edit_id', type=int)
-
     cursor, conn = getCursor(dictionary=True)
 
-    # ===== POST: create OR update a file =====
     if request.method == 'POST':
         file_id = request.form.get('file_id')  # empty when creating
-
         subject = request.form.get('subject', '').strip()
         description = request.form.get('description', '').strip()
+        is_admin_only = True if request.form.get('is_admin_only') else False
         upload = request.files.get('file')
 
         if not subject:
             flash('Subject is required.', 'error')
-            cursor.close()
-            conn.close()
+            cursor.close(); conn.close()
             return redirect(url_for('admin_files'))
 
-        # we only require a file when creating new
+        # require a file only for create
         if not file_id and (not upload or upload.filename == ''):
             flash('Please choose a file to upload.', 'error')
-            cursor.close()
-            conn.close()
+            cursor.close(); conn.close()
             return redirect(url_for('admin_files'))
 
         filename_on_disk = None
 
+        # if user uploaded a new file, save it
         if upload and upload.filename:
             if not allowed_file_generic(upload.filename):
                 flash('File type not allowed.', 'error')
-                cursor.close()
-                conn.close()
+                cursor.close(); conn.close()
                 return redirect(url_for('admin_files'))
 
-            # unique-ish filename
             safe_name = secure_filename(upload.filename)
             timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
             filename_on_disk = f"{timestamp}_{safe_name}"
             upload.save(os.path.join(app.config['FILE_UPLOAD_FOLDER'], filename_on_disk))
 
-        # --- UPDATE existing file ---
+        # UPDATE
         if file_id:
             cursor.execute(
                 """
                 UPDATE files
                 SET subject = %s,
                     description = %s,
+                    is_admin_only = %s,
                     filename = COALESCE(%s, filename)
                 WHERE file_id = %s
                 """,
-                (subject, description, filename_on_disk, file_id)
+                (subject, description, is_admin_only, filename_on_disk, file_id)
             )
             flash('File updated successfully.', 'success')
 
-        # --- CREATE new file ---
+        # CREATE
         else:
             cursor.execute(
                 """
-                INSERT INTO files (subject, description, filename, uploader_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO files (subject, description, filename, uploader_id, is_admin_only)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (subject, description, filename_on_disk, session['user_id'])
+                (subject, description, filename_on_disk, session['user_id'], is_admin_only)
             )
-            flash('File sent to members.', 'success')
+            flash('File uploaded successfully.', 'success')
 
         conn.commit()
-        cursor.close()
-        conn.close()
+        cursor.close(); conn.close()
         return redirect(url_for('admin_files'))
 
-    # ===== GET: load all files for the table =====
+    # GET: list
     cursor.execute(
         """
         SELECT f.file_id,
@@ -907,6 +882,7 @@ def admin_files():
                f.description,
                f.filename,
                f.created_at,
+               f.is_admin_only,
                u.username AS uploader
         FROM files f
         JOIN users u ON f.uploader_id = u.user_id
@@ -915,12 +891,11 @@ def admin_files():
     )
     files = cursor.fetchall()
 
-    # if editing, load that row to pre-fill the form
     file_to_edit = None
     if edit_id:
         cursor.execute(
             """
-            SELECT file_id, subject, description, filename, created_at
+            SELECT file_id, subject, description, filename, created_at, is_admin_only
             FROM files
             WHERE file_id = %s
             """,
@@ -928,10 +903,33 @@ def admin_files():
         )
         file_to_edit = cursor.fetchone()
 
+    cursor.close(); conn.close()
+    return render_template('admin_files.html', files=files, file_to_edit=file_to_edit)
+  
+  #========= file/audiance ================#
+  
+# ========= file/audience ================#
+
+@app.route('/admin/files/<int:file_id>/audience', methods=['POST'])
+def update_file_audience(file_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    audience = request.form.get('audience', 'public')  # public/admin
+    is_admin_only = True if audience == 'admin' else False
+
+    cursor, conn = getCursor()
+    cursor.execute(
+        "UPDATE files SET is_admin_only = %s WHERE file_id = %s",
+        (is_admin_only, file_id)
+    )
+    conn.commit()
     cursor.close()
     conn.close()
 
-    return render_template('admin_files.html', files=files, file_to_edit=file_to_edit)
+    flash('Audience updated.', 'success')
+    return redirect(url_for('admin_files'))
+
 
 #------------ Delete file -----------#
 
@@ -956,26 +954,24 @@ def member_files():
         return redirect(url_for('login'))
 
     user_id = session['user_id']
-
     cursor, conn = getCursor(dictionary=True)
 
-    # all files
-    cursor.execute(
-        """
-        SELECT f.file_id,
-               f.subject,
-               f.description,
-               f.filename,
-               f.created_at,
-               u.username AS uploader
-        FROM files f
-        JOIN users u ON f.uploader_id = u.user_id
-        ORDER BY f.created_at DESC
-        """
-    )
-    files = cursor.fetchall()
+cursor.execute(
+    """
+    SELECT f.file_id,
+           f.subject,
+           f.description,
+           f.filename,
+           f.created_at,
+           u.username AS uploader
+    FROM files f
+    JOIN users u ON f.uploader_id = u.user_id
+    WHERE f.is_admin_only = FALSE
+    ORDER BY f.created_at DESC
+    """
+)
+files = cursor.fetchall()
 
-    # mark them as "read" for this member
     for f in files:
         cursor.execute(
             """
@@ -987,9 +983,7 @@ def member_files():
         )
 
     conn.commit()
-    cursor.close()
-    conn.close()
-
+    cursor.close(); conn.close()
     return render_template('member_files.html', files=files)
 
 
@@ -1068,54 +1062,7 @@ def send_email(subject, body):
         smtp.login(smtp_user, smtp_pass)
         smtp.send_message(msg)
 
- #---- get “active event for member home” ---#
- 
-def get_active_event(cursor):
-    # 1) pinned event (still future or today; you can allow pinned past if you want)
-    cursor.execute("""
-        SELECT *
-        FROM events
-        WHERE is_pinned = TRUE
-          AND (event_date > CURRENT_DATE OR event_date = CURRENT_DATE)
-        ORDER BY event_date ASC, start_time ASC, updated_at DESC
-        LIMIT 1
-    """)
-    pinned = cursor.fetchone()
-    if pinned:
-        return pinned
-
-    # 2) next upcoming event
-    cursor.execute("""
-        SELECT *
-        FROM events
-        WHERE (event_date > CURRENT_DATE)
-           OR (event_date = CURRENT_DATE AND start_time >= CURRENT_TIME)
-        ORDER BY event_date ASC, start_time ASC
-        LIMIT 1
-    """)
-    return cursor.fetchone()
-  
-  #-- Member: mark event as seen ----#
-  
-  @app.route('/member/events/<int:event_id>/seen', methods=['POST'])
-def mark_event_seen(event_id):
-    if session.get('role') != 'member':
-        return redirect(url_for('login'))
-
-    user_id = session['user_id']
-    cursor, conn = getCursor(dictionary=True)
-
-    cursor.execute("""
-        INSERT INTO event_reads (event_id, user_id)
-        VALUES (%s, %s)
-        ON CONFLICT (event_id, user_id) DO NOTHING
-    """, (event_id, user_id))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-    return ("", 204)
-
+#========== EVENTS ======================#
 
 #-- 1- Admin manage events page -----#
 @app.route('/admin/events', methods=['GET', 'POST'])
@@ -1185,3 +1132,52 @@ def admin_pin_event(event_id):
     cursor.close(); conn.close()
     flash('Event pinned to top.', 'success')
     return redirect(url_for('admin_events'))
+
+ #---- get “active event for member home” ---#
+ 
+def get_active_event(cursor):
+    # 1) pinned event (still future or today; you can allow pinned past if you want)
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE is_pinned = TRUE
+          AND (event_date > CURRENT_DATE OR event_date = CURRENT_DATE)
+        ORDER BY event_date ASC, start_time ASC, updated_at DESC
+        LIMIT 1
+    """)
+    pinned = cursor.fetchone()
+    if pinned:
+        return pinned
+
+    # 2) next upcoming event
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE (event_date > CURRENT_DATE)
+           OR (event_date = CURRENT_DATE AND start_time >= CURRENT_TIME)
+        ORDER BY event_date ASC, start_time ASC
+        LIMIT 1
+    """)
+    return cursor.fetchone()
+  
+  #-- Member: mark event as seen ----#
+  
+@app.route('/member/events/<int:event_id>/seen', methods=['POST'])
+def mark_event_seen(event_id):
+    if session.get('role') != 'member':
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    cursor, conn = getCursor(dictionary=True)
+
+    cursor.execute("""
+        INSERT INTO event_reads (event_id, user_id)
+        VALUES (%s, %s)
+        ON CONFLICT (event_id, user_id) DO NOTHING
+    """, (event_id, user_id))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    return ("", 204)
+

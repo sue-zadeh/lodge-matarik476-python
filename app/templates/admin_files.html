@@ -41,6 +41,7 @@
                   <th>Subject</th>
                   <th>description</th>
                   <th>Sent on</th>
+                  <th>Audience</th>
                   <th>By</th>
                   <th>File</th>
                   <th class="text-end">Actions</th>
@@ -53,6 +54,22 @@
                     <td class="description-cell">{{ f.subject }}</td>
                     <td class="description-cell">{{ f.description }}</td>
                     <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
+                    <td>
+  <form method="POST" action="{{ url_for('update_file_audience', file_id=f.file_id) }}">
+    <select name="audience" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="public" {% if not f.is_admin_only %}selected{% endif %}>Members</option>
+      <option value="admin" {% if f.is_admin_only %}selected{% endif %}>Admin only</option>
+    </select>
+  </form>
+  {% if f.is_admin_only %}
+  <span class="badge bg-warning text-dark">Admin only</span>
+  {% else %}
+  <span class="badge bg-success">Members</span>
+  {% endif %}
+</td>
+
+
+
                     <td>{{ f.uploader }}</td>
                     <td>
                       <a href="{{ url_for('static', filename='files/' ~ f.filename) }}"
@@ -128,6 +145,18 @@
                         rows="3"
                         placeholder="Short info about the file">{{ file_to_edit.description if file_to_edit else '' }}</textarea>
             </div>
+
+            <div class="form-check mt-2">
+<input class="form-check-input" type="checkbox" id="is_admin_only" name="is_admin_only"
+  {% if file_to_edit and file_to_edit.is_admin_only %}checked{% endif %}>
+<label class="form-check-label" for="is_admin_only">
+  Admin only (do not send to members)
+</label>
+</div>
+<div class="form-text text-muted mb-2">
+  If ticked, members will not see this file.
+</div>
+
 
             <div class="mb-3">
               <label for="file" class="form-label">
