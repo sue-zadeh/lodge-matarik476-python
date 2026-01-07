@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
@@ -10,7 +9,7 @@
     <div class="col-12">
       <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift" data-aos="fade-down-right">
         <img
-          src="{% if user.profile_image %}
+          src="{% if user and user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
                {% else %}
                   {{ url_for('static', filename='img/logo1.jpg') }}
@@ -22,59 +21,51 @@
         <div>
           <p class="mb-1 text-muted small">Welcome back,</p>
           <h6 class="mb-1 text-light">
-            Welcome {{ user.first_name }} {{ user.last_name }}
+            Welcome {{ user.first_name if user else '' }} {{ user.last_name if user else '' }}
           </h6>
-          <span class="badge bg-warning text-dark">
-            Admin
-          </span>
+          <span class="badge bg-warning text-dark">Admin</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Dashboard title -->
-  <h1 class="text-center text-success mb-4 mt-4">
-    Admin Dashboard
-  </h1>
+  <h1 class="text-center text-success mb-2 mt-4">Admin Dashboard</h1>
+  <p class="text-center mb-4">Welcome, {{ session.get('username') }}</p>
 
-  <p class="text-center mb-4 ">
-    Welcome, {{ session.get('username') }}
-  </p>
-
-  <!-- Admin tiles -->
+  <!-- Main tiles -->
   <div class="row g-4">
 
-    <div class="col-md-4" data-aos="fade-down-right" data-aos="fade-down-left">
-      <a href="{{ url_for('admin_manage_users') }}" class="text-decoration-none">
-        <div class="card bg-dark text-light hover-lift shadow-lg rounded">
-          <div class="card-body text-center">
-            <i class="fas fa-users fa-2x mb-2 shadow-lg rounded"></i>
-            <h5 class="card-title">Manage Members</h5>
-            <p class="card-text small">View, edit and add lodge members.</p>
-          </div>
-        </div>
-      </a>
-    </div>
-
     <div class="col-md-4" data-aos="fade-down-right">
-      <a href="#" class="text-decoration-none">
-        <div class="card bg-dark text-light hover-lift">
-          <div class="card-body text-center shadow-lg rounded">
-            <i class="fas fa-bullhorn fa-2x mb-2 shadow-lg rounded"></i>
-            <h5 class="card-title">Manage Announcements</h5>
-            <p class="card-text small">All announcements, create new, edit</p>
+      <a href="{{ url_for('admin_manage_users') }}" class="text-decoration-none d-block h-100">
+        <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-users fa-2x mb-2"></i>
+            <h5 class="card-title">Manage Members</h5>
+            <p class="card-text small mb-0">View, edit, activate/deactivate, and manage members.</p>
           </div>
         </div>
       </a>
     </div>
 
-    <div class="col-md-4" data-aos="fade-down-left" data-aos="fade-down-left">
-      <a href="{{ url_for('admin_files')}}" class="text-decoration-none">
-        <div class="card bg-dark text-light hover-lift">
-          <div class="card-body text-center shadow-lg rounded">
-            <i class="fas fa-file-upload fa-2x mb-2 shadow-lg rounded"></i>
-            <h5 class="card-title">Manage Files</h5>
-            <p class="card-text small">View files, upload new ones, delete</p>
+    <div class="col-md-4" data-aos="fade-down">
+      <a href="{{ url_for('admin_events') }}" class="text-decoration-none d-block h-100">
+        <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+            <h5 class="card-title">Events &amp; Calendar</h5>
+            <p class="card-text small mb-0">Create events, set audience (Members/Admin-only), pin important events.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4" data-aos="fade-down-left">
+      <a href="{{ url_for('admin_files') }}" class="text-decoration-none d-block h-100">
+        <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-file-upload fa-2x mb-2"></i>
+            <h5 class="card-title">Files</h5>
+            <p class="card-text small mb-0">Upload files and set audience: Members or Admin-only.</p>
           </div>
         </div>
       </a>
@@ -82,69 +73,52 @@
 
   </div>
 
-  <div class="row g-4 mt-3 justify-content-center" data-aos="fade-down-left">
+  <!-- Secondary row -->
+  <div class="row g-4 mt-3 justify-content-center">
 
-
-<div class="col-md-4">
-  <a href="{{ url_for('register') }}" class="text-decoration-none" data-aos="fade-down-right">
-    <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-left">
-      <div class="card-body d-flex flex-column justify-content-between shadow-lg rounded">
-        <h5 class="card-title text-warning">Register a new Member / Admin</h5>
-
-        <p class="card-text small">
-          Add new lodge members and admins to the system.
-        </p>
-
-        <div class="text-end">
-          <i class="fas fa-user-plus fa-2x text-warning shadow-lg rounded"></i>
-        </div>
-      </div>
-    </div>
-  </a>
-</div>
-
-   
-   
     <div class="col-md-4" data-aos="fade-down-right">
-      <a href="{{admin_events}}" class="text-decoration-none">
-    <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift" data-aos="fade-down-left">
-      <div class="card-body d-flex flex-column justify-content-between shadow-lg rounded">
-            <h5 class="card-title text-warning">Manage Events / Calendar</h5>
-             <p class="card-text small">
-              Add / edit events & meetings and special nights
-            </p>
-            <div class="text-end small">
-              <i class="fas fa-calendar-alt fa-2x text-warning shadow-lg rounded"></i>
+      <a href="{{ url_for('register') }}" class="text-decoration-none d-block h-100">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <h5 class="card-title text-warning">Register Member / Admin</h5>
+            <p class="card-text small mb-0">Add a new user to the system and choose their role.</p>
+            <div class="text-end mt-3">
+              <i class="fas fa-user-plus fa-2x text-warning"></i>
             </div>
           </div>
         </div>
       </a>
     </div>
-    
-    <div class="row mt-4 justify-content-center">
-      <div class="col-md-9 col-lg-6" data-aos="fade-down-left">
-        <div class="card bg-dark text-light border-0 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title text-warning">
-          Admin's Mesage to members
-        </h5>
-        <form action="{{ url_for('admin_whats_next') }}" method="post">
-          <label class="form-label small text-secondary" data-aos="fade-down-right">
-            Short note that members will see on their home page.
-          </label>
-          <textarea name="whats_next"
-                    class="form-control bg-dark text-light fs-5"
-                    rows="3"
-                    placeholder="Example: Installation night next Thursday – full regalia, please arrive by 7:00pm.">{{ latest_note }}</textarea>
-          <button class="btn btn-warning btn-sm mt-2">
-            Save message &amp; send to members' home page
-          </button>
-        </form>
+
+  </div>
+
+  <!-- Admin message to members -->
+  <div class="row mt-4 justify-content-center">
+    <div class="col-md-9 col-lg-7" data-aos="fade-down-left">
+      <div class="card bg-dark text-light border border-secondary shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-warning mb-2">
+            Admin Message to Members
+          </h5>
+
+          <form action="{{ url_for('admin_whats_next') }}" method="post">
+            <label class="form-label small text-secondary">
+              Short note that members will see on their home page.
+            </label>
+
+            <textarea name="whats_next"
+                      class="form-control bg-dark text-light"
+                      rows="3"
+                      placeholder="Example: Installation night next Thursday – full regalia, please arrive by 7:00pm.">{{ latest_note }}</textarea>
+
+            <button class="btn btn-warning btn-sm mt-3">
+              Save message &amp; show on members’ home page
+            </button>
+          </form>
+
+        </div>
       </div>
     </div>
-  </div>
-</div>
-
   </div>
 
 </div>

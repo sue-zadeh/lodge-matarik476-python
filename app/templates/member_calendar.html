@@ -1,8 +1,80 @@
 {% extends 'base.html' %}
-{% block title %}Calendar{% endblock %}
+{% block title %}Member Calendar{% endblock %}
+
 {% block content %}
-  <div class="container mt-4">
-    <h2 class="text-warning">Calendar</h2>
-    <p class="text-light">Coming soon…</p>
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="text-warning mb-0">
+      <i class="fas fa-calendar-alt me-2"></i> Calendar
+    </h3>
+    <a href="{{ url_for('member_home') }}" class="btn btn-outline-light btn-sm">
+      Back to Home
+    </a>
   </div>
+
+  {% if events and events|length > 0 %}
+    <div class="row g-3">
+      {% for e in events %}
+        <div class="col-md-6">
+          <div class="card bg-dark border border-secondary shadow-sm h-100">
+            <div class="card-body">
+
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <h5 class="text-light mb-1">{{ e.title }}</h5>
+                  <div class="text-secondary small">
+                    <i class="far fa-clock me-1"></i>
+                    {{ e.event_date }} • {{ e.start_time }}
+                    {% if e.end_time %} - {{ e.end_time }}{% endif %}
+                    {% if e.location %}
+                      &nbsp; • &nbsp;<i class="fas fa-map-marker-alt me-1"></i>{{ e.location }}
+                    {% endif %}
+                  </div>
+                </div>
+
+                {% if e.is_expired %}
+                  <span class="badge bg-secondary">Expired</span>
+                {% else %}
+                  {% if e.is_pinned %}
+                    <span class="badge bg-warning text-dark">Pinned</span>
+                  {% else %}
+                    <span class="badge bg-success">Upcoming</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+
+              {% if e.description %}
+                <div class="text-light mt-2" style="white-space: pre-line;">
+                  {{ e.description }}
+                </div>
+              {% endif %}
+
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <a class="btn btn-outline-warning btn-sm"
+                   href="{{ url_for('member_event_ics', event_id=e.event_id) }}">
+                  <i class="fas fa-download me-1"></i> Download .ics
+                </a>
+
+                <!-- Optional: mark seen (if you want to reuse your badge logic) -->
+                <!--
+                <form method="post" action="{{ url_for('mark_event_seen', event_id=e.event_id) }}">
+                  <button class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-check me-1"></i> Got it
+                  </button>
+                </form>
+                -->
+              </div>
+
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-secondary bg-dark border-secondary text-light">
+      No events yet.
+    </div>
+  {% endif %}
+</div>
 {% endblock %}

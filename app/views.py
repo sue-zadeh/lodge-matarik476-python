@@ -625,15 +625,16 @@ def admin_whats_next():
 
     cursor, conn = getCursor()
     cursor.execute(
-        "INSERT INTO whats_next (content) VALUES (%s)",
+        "INSERT INTO admin_messages (note) VALUES (%s)",
         (text,)
     )
     conn.commit()
     cursor.close()
     conn.close()
 
-    flash("What's Happening Next message updated.", 'success')
+    flash("Message sent to members' home page.", 'success')
     return redirect(url_for('admin_home'))
+
 # =========================================================
 # ADMIN – MANAGE USERS (members + admins)
 # =========================================================
@@ -1085,6 +1086,8 @@ def admin_events():
         start_time = request.form.get('start_time', '').strip()
         end_time = request.form.get('end_time', '').strip()
         location = request.form.get('location', '').strip()
+        audience = request.form.get('audience', 'members')  # members/admin
+        is_admin_only = True if audience == 'admin' else False
         is_pinned = True if request.form.get('is_pinned') else False
 
         if not title or not event_date or not start_time:
@@ -1097,9 +1100,9 @@ def admin_events():
             cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
 
         cursor.execute("""
-            INSERT INTO events (title, description, event_date, start_time, end_time, location, is_pinned, created_by)
-            VALUES (%s, %s, %s, %s, NULLIF(%s,''), %s, %s, %s)
-        """, (title, description, event_date, start_time, end_time, location, is_pinned, admin_id))
+            INSERT INTO events (title, description, event_date, start_time, end_time, location, is_pinned, created_by, is_admin_only)
+            VALUES (%s, %s, %s, %s, NULLIF(%s,''), %s, %s, %s, %s, %s)
+        """, (title, description, event_date, start_time, end_time, location, is_pinned, admin_id, is_admin_only))
         conn.commit()
 
         flash('Event created.', 'success')
@@ -1141,25 +1144,29 @@ def admin_pin_event(event_id):
  #---- get “active event for member home” ---#
  
 def get_active_event(cursor):
-    # 1) pinned event (still future or today; you can allow pinned past if you want)
+    # pinned upcoming event for MEMBERS (not admin-only)
     cursor.execute("""
         SELECT *
         FROM events
         WHERE is_pinned = TRUE
+          AND is_admin_only = FALSE
           AND (event_date > CURRENT_DATE OR event_date = CURRENT_DATE)
-        ORDER BY event_date ASC, start_time ASC, updated_at DESC
+        ORDER BY event_date ASC, start_time ASC
         LIMIT 1
     """)
     pinned = cursor.fetchone()
     if pinned:
         return pinned
 
-    # 2) next upcoming event
+    # next upcoming MEMBERS event
     cursor.execute("""
         SELECT *
         FROM events
-        WHERE (event_date > CURRENT_DATE)
-           OR (event_date = CURRENT_DATE AND start_time >= CURRENT_TIME)
+        WHERE is_admin_only = FALSE
+          AND (
+               event_date > CURRENT_DATE
+               OR (event_date = CURRENT_DATE AND start_time >= CURRENT_TIME)
+          )
         ORDER BY event_date ASC, start_time ASC
         LIMIT 1
     """)
@@ -1185,9 +1192,86 @@ def mark_event_seen(event_id):
     cursor.close()
     conn.close()
     return ("", 204)
+  
+#============= MEMBER / CALENDER =========#4955
 
 @app.route('/member/calendar')
 def member_calendar():
     if session.get('role') != 'member':
         return redirect(url_for('login'))
-    return render_template('member_calendar.html')
+
+    user_id = session['user_id']
+    cursor, conn = getCursor(dictionary=True)
+
+    # Members only see shared events
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE is_admin_only = FALSE
+        ORDER BY event_date DESC, start_time DESC
+        LIMIT 50
+    """)
+    events = cursor.fetchall()
+
+    today = date.today()
+
+    # Add status
+    for e in events:
+        # event_date is usually date already; if it's string, you can parse it
+        e_date = e['event_date']
+        e['is_expired'] = (e_date < today)
+
+    cursor.close()
+    conn.close()
+
+    return render_template('member_calendar.html', events=events)
+
+#========= members can save event - download .ics =========#
+@app.route('/member/events/<int:event_id>/ics')
+def member_event_ics(event_id):
+    if session.get('role') != 'member':
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor(dictionary=True)
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE event_id = %s AND is_admin_only = FALSE
+        LIMIT 1
+    """, (event_id,))
+    e = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not e:
+        return "Event not found", 404
+
+    # Build basic ICS (no extra libraries)
+    # Format: YYYYMMDDTHHMMSSZ (we’ll treat as local time without Z to keep simple)
+    dt_start = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['start_time']).replace(':','')[:4]}00"
+    dt_end = dt_start
+    if e.get('end_time'):
+        dt_end = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['end_time']).replace(':','')[:4]}00"
+
+    title = (e.get('title') or 'Lodge Event').replace('\n', ' ')
+    desc = (e.get('description') or '').replace('\n', '\\n')
+    location = (e.get('location') or '').replace('\n', ' ')
+
+    ics = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Lodge Matariki 476//EN
+BEGIN:VEVENT
+UID:event-{e['event_id']}@lodge
+DTSTART:{dt_start}
+DTEND:{dt_end}
+SUMMARY:{title}
+DESCRIPTION:{desc}
+LOCATION:{location}
+END:VEVENT
+END:VCALENDAR
+"""
+
+    return (ics, 200, {
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": f"attachment; filename=event_{e['event_id']}.ics"
+    })
