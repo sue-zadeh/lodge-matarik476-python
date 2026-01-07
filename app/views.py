@@ -274,7 +274,6 @@ def member_home():
         return redirect(url_for('login'))
 
     user_id = session.get('user_id')
-
     cursor, conn = getCursor(dictionary=True)
 
     # --- member info ---
@@ -286,22 +285,27 @@ def member_home():
     user = cursor.fetchone()
 
     # --- NEW FILES notification data ---
-    cursor.execute(
-    """
-    SELECT f.file_id, f.subject, f.created_at
-    FROM files f
-    LEFT JOIN file_reads fr
-      ON fr.file_id = f.file_id AND fr.user_id = %s
-    WHERE fr.user_id IS NULL
-    AND f.is_admin_only = FALSE
-    ORDER BY f.created_at DESC
-    LIMIT 5
-    """,
-    (user_id,)
-)
-
+    cursor.execute("""
+        SELECT f.file_id, f.subject, f.created_at
+        FROM files f
+        LEFT JOIN file_reads fr
+          ON fr.file_id = f.file_id AND fr.user_id = %s
+        WHERE fr.user_id IS NULL
+          AND f.is_admin_only = FALSE
+        ORDER BY f.created_at DESC
+        LIMIT 5
+    """, (user_id,))
     new_files = cursor.fetchall()
     new_files_count = len(new_files)
+
+    # --- Admin message to members (latest) ---
+    cursor.execute("""
+        SELECT note
+        FROM admin_messages
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+    """)
+    whats_next = cursor.fetchone()
 
     # --- show event + NEW badge ---
     active_event = get_active_event(cursor)
@@ -326,7 +330,8 @@ def member_home():
         active_event=active_event,
         event_is_new=event_is_new,
         new_files=new_files,
-        new_files_count=new_files_count
+        new_files_count=new_files_count,
+        whats_next=whats_next
     )
 
 
@@ -907,7 +912,7 @@ def admin_files():
     cursor.close(); conn.close()
     return render_template('admin_files.html', files=files, file_to_edit=file_to_edit)
   
-  #========= file/audiance ================#
+  #=====================================#
   
 # ========= file/audience ================#
 
@@ -1070,7 +1075,8 @@ def send_email(subject, body):
 
 #========== EVENTS ======================#
 
-#-- 1- Admin manage events page -----#
+#===== Admin manage events page =======#
+
 @app.route('/admin/events', methods=['GET', 'POST'])
 def admin_events():
     if session.get('role') != 'admin':
@@ -1079,45 +1085,64 @@ def admin_events():
     cursor, conn = getCursor(dictionary=True)
     admin_id = session.get('user_id')
 
-    if request.method == 'POST':
-        title = request.form.get('title', '').strip()
-        description = request.form.get('description', '').strip()
-        event_date = request.form.get('event_date', '').strip()
-        start_time = request.form.get('start_time', '').strip()
-        end_time = request.form.get('end_time', '').strip()
-        location = request.form.get('location', '').strip()
-        audience = request.form.get('audience', 'members')  # members/admin
-        is_admin_only = True if audience == 'admin' else False
-        is_pinned = True if request.form.get('is_pinned') else False
+    try:
+        if request.method == 'POST':
+            title = request.form.get('title', '').strip()
+            description = request.form.get('description', '').strip()
 
-        if not title or not event_date or not start_time:
-            flash('Please fill in Title, Date, and Start time.', 'error')
-            cursor.close(); conn.close()
+            event_date = request.form.get('event_date', '').strip()      # YYYY-MM-DD
+            start_time = request.form.get('start_time', '').strip()      # HH:MM
+            end_time = request.form.get('end_time', '').strip()          # HH:MM or ""
+            location = request.form.get('location', '').strip()
+
+            audience = request.form.get('audience', 'members')  # members/admin
+            is_admin_only = True if audience == 'admin' else False
+            is_pinned = True if request.form.get('is_pinned') else False
+
+            if not title or not event_date or not start_time:
+                flash('Please fill in Title, Date, and Start time.', 'error')
+                return redirect(url_for('admin_events'))
+
+            # IMPORTANT: make empty end_time become NULL (not text '')
+            if end_time == '':
+                end_time = None
+
+            # Only one pinned event at a time
+            if is_pinned:
+                cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
+
+            cursor.execute("""
+                INSERT INTO events (
+                    title, description, event_date, start_time, end_time,
+                    location, is_pinned, is_admin_only, created_by
+                )
+                VALUES (
+                    %s, %s, %s::date, %s::time, %s::time,
+                    %s, %s, %s, %s
+                )
+            """, (
+                title, description, event_date, start_time, end_time,
+                location, is_pinned, is_admin_only, admin_id
+            ))
+
+            conn.commit()
+            flash('Event created.', 'success')
             return redirect(url_for('admin_events'))
 
-        # if pin is checked, unpin others (only one pinned at a time)
-        if is_pinned:
-            cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
-
+        # GET list
         cursor.execute("""
-            INSERT INTO events (title, description, event_date, start_time, end_time, location, is_pinned, created_by, is_admin_only)
-            VALUES (%s, %s, %s, %s, NULLIF(%s,''), %s, %s, %s, %s, %s)
-        """, (title, description, event_date, start_time, end_time, location, is_pinned, admin_id, is_admin_only))
-        conn.commit()
+            SELECT e.*, u.username AS created_by_name
+            FROM events e
+            LEFT JOIN users u ON u.user_id = e.created_by
+            ORDER BY e.is_pinned DESC, e.event_date DESC, e.start_time DESC
+        """)
+        events = cursor.fetchall()
 
-        flash('Event created.', 'success')
+        return render_template('admin_events.html', events=events)
 
-    cursor.execute("""
-        SELECT e.*, u.username AS created_by_name
-        FROM events e
-        LEFT JOIN users u ON u.user_id = e.created_by
-        ORDER BY e.is_pinned DESC, e.event_date DESC, e.start_time DESC
-    """)
-    events = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-    return render_template('admin_events.html', events=events)
+    finally:
+        cursor.close()
+        conn.close()
 
 #---- 2- Admin pin/unpin event -----#
 

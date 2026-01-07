@@ -19,22 +19,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS whats_next (
-    id SERIAL PRIMARY KEY,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS events (
-    event_id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    event_date DATE NOT NULL,
-    start_time TIME NOT NULL,
-    location VARCHAR(255),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
 
 CREATE TABLE IF NOT EXISTS admin_messages (
     id        SERIAL PRIMARY KEY,
@@ -70,6 +54,7 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     message TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
 
 -- EVENTS (admin creates, members view)
 CREATE TABLE IF NOT EXISTS events (

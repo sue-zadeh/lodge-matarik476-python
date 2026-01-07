@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Events{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- Page title -->
+  <div class="mb-4 text-center">
+    <h2 class="text-warning">
+      <i class="fas fa-calendar-alt me-2"></i> Manage Events & Calendar
+    </h2>
+    <p class="card-text small fs-6">
+      Create lodge events, choose audience, and pin important dates.
+    </p>
+  </div>
+
+  <!-- CREATE EVENT FORM -->
+  <div class="card bg-dark text-light border-secondary shadow-lg mb-5">
+    <div class="card-body">
+      <h5 class="text-warning mb-3">
+        <i class="fas fa-plus-circle me-2"></i> Create New Event
+      </h5>
+
+      <form method="post">
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Title *</label>
+            <input type="text" name="title" class="form-control bg-dark text-light" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Location</label>
+            <input type="text" name="location" class="form-control bg-dark text-light">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Date *</label>
+            <input type="date" name="event_date" class="form-control bg-dark text-light" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Start Time *</label>
+            <input type="time" name="start_time" class="form-control bg-dark text-light" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">End Time</label>
+            <input type="time" name="end_time" class="form-control bg-dark text-light">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea name="description"
+                      rows="3"
+                      class="form-control bg-dark text-light"
+                      placeholder="Details members will see (dress code, agenda, notes…)"></textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Audience</label>
+            <select name="audience" class="form-select bg-dark text-light">
+              <option value="members">Members & Admins</option>
+              <option value="admin">Admins only</option>
+            </select>
+          </div>
+
+          <div class="col-md-6 d-flex align-items-center gap-4 mt-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_pinned" id="isPinned">
+              <label class="form-check-label" for="isPinned">
+                Pin to top of members’ home page
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-end">
+          <button class="btn btn-warning">
+            <i class="fas fa-save me-1"></i> Create Event
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- EVENTS LIST -->
+  <h5 class="text-warning mb-3">
+    <i class="fas fa-list me-2"></i> Existing Events
+  </h5>
+
+  {% if events %}
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Audience</th>
+            <th>Pinned</th>
+            <th>Created By</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for e in events %}
+          <tr>
+            <td>
+              <strong>{{ e.title }}</strong>
+              {% if e.description %}
+                <div class="small text-muted">{{ e.description }}</div>
+              {% endif %}
+            </td>
+
+            <td>{{ e.event_date }}</td>
+
+            <td>
+              {{ e.start_time }}
+              {% if e.end_time %} – {{ e.end_time }}{% endif %}
+            </td>
+
+            <td>
+              {% if e.is_admin_only %}
+                <span class="badge bg-secondary">Admins only</span>
+              {% else %}
+                <span class="badge bg-info text-dark">Members</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if e.is_pinned %}
+                <span class="badge bg-warning text-dark">Pinned</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td>
+              {{ e.created_by_name or '—' }}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="card-text small">No events created yet.</p>
+  {% endif %}
+
+</div>
+{% endblock %}
