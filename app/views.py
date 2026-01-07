@@ -947,31 +947,34 @@ def delete_file(file_id):
     flash('File deleted.', 'success')
     return redirect(url_for('admin_files'))
   
-  # ------------ Member/Files page -------#
+# ------------ Member/Files page -------#
 @app.route('/member/files')
 def member_files():
     if session.get('role') != 'member':
         return redirect(url_for('login'))
 
     user_id = session['user_id']
+
     cursor, conn = getCursor(dictionary=True)
 
-cursor.execute(
-    """
-    SELECT f.file_id,
-           f.subject,
-           f.description,
-           f.filename,
-           f.created_at,
-           u.username AS uploader
-    FROM files f
-    JOIN users u ON f.uploader_id = u.user_id
-    WHERE f.is_admin_only = FALSE
-    ORDER BY f.created_at DESC
-    """
-)
-files = cursor.fetchall()
+    # members should NOT see admin-only files
+    cursor.execute(
+        """
+        SELECT f.file_id,
+               f.subject,
+               f.description,
+               f.filename,
+               f.created_at,
+               u.username AS uploader
+        FROM files f
+        JOIN users u ON f.uploader_id = u.user_id
+        WHERE f.is_admin_only = FALSE
+        ORDER BY f.created_at DESC
+        """
+    )
+    files = cursor.fetchall()
 
+    # mark as read (only for the files the member can see)
     for f in files:
         cursor.execute(
             """
@@ -983,7 +986,9 @@ files = cursor.fetchall()
         )
 
     conn.commit()
-    cursor.close(); conn.close()
+    cursor.close()
+    conn.close()
+
     return render_template('member_files.html', files=files)
 
 
@@ -1181,3 +1186,8 @@ def mark_event_seen(event_id):
     conn.close()
     return ("", 204)
 
+@app.route('/member/calendar')
+def member_calendar():
+    if session.get('role') != 'member':
+        return redirect(url_for('login'))
+    return render_template('member_calendar.html')

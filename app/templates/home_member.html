@@ -1,55 +1,235 @@
-{% if active_event %}
-  <div class="card bg-dark border border-secondary rounded-3 shadow-lg mb-4" data-aos="fade-down">
-    <div class="card-body d-flex justify-content-between align-items-start flex-wrap gap-3">
+{% extends 'base.html' %}
 
-      <div>
-        <div class="d-flex align-items-center gap-2">
-          <h5 class="text-warning mb-1">
-            <i class="fas fa-calendar-alt me-2"></i> Next Lodge Event
-          </h5>
+{% block title %}Member Home{% endblock %}
 
-          {% if event_is_new %}
-            <span class="badge bg-danger">NEW</span>
-          {% endif %}
+{% block content %}
 
-          {% if active_event.is_pinned %}
-            <span class="badge bg-warning text-dark">Pinned</span>
-          {% endif %}
+<style>
+  .new-file-alert {
+      background: rgba(52, 152, 219, 0.15);
+      border-left: 4px solid #f1c40f;
+      border-radius: 8px;
+      color: #fff;
+  }
+  .new-file-alert a:hover {
+      background-color: #f1c40f !important;
+      color: #000 !important;
+  }
+</style>
+
+<div class="container mt-4">
+
+  <!-- ========================= -->
+  <!-- New file notification -->
+  <!-- ========================= -->
+  {% if new_files_count and new_files_count > 0 %}
+    <div class="alert new-file-alert d-flex align-items-center justify-content-between shadow-sm mb-3" data-aos="fade-up">
+      <div class="d-flex align-items-center flex-wrap">
+        <i class="fas fa-file-alt me-2 text-warning"></i>
+        <span>You have {{ new_files_count }} new {{ 'file' if new_files_count == 1 else 'files' }}.</span>
+
+        {% if new_files and new_files[0].subject %}
+          <span class="ms-2 text-light small">Latest: "{{ new_files[0].subject }}"</span>
+        {% endif %}
+      </div>
+
+      <a href="{{ url_for('member_files') }}" class="btn btn-sm btn-outline-light">Open files</a>
+    </div>
+  {% endif %}
+
+  <!-- ========================= -->
+  <!-- Next Lodge Event (ACTIVE EVENT) -->
+  <!-- ========================= -->
+  {% if active_event %}
+    <div class="card bg-dark border border-secondary rounded-3 shadow-lg mb-4" data-aos="fade-down">
+      <div class="card-body">
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h5 class="text-warning mb-0">
+              <i class="fas fa-calendar-alt me-2"></i> Next Lodge Event
+            </h5>
+
+            {% if event_is_new %}
+              <span class="badge bg-danger">NEW</span>
+            {% endif %}
+
+            {% if active_event.is_pinned %}
+              <span class="badge bg-warning text-dark">Pinned</span>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2 flex-column flex-sm-row">
+            <form method="post" action="{{ url_for('mark_event_seen', event_id=active_event.event_id) }}">
+              <button type="submit" class="btn btn-outline-warning w-100">
+                <i class="fas fa-check me-1"></i> Got it
+              </button>
+            </form>
+
+            <a class="btn btn-outline-light w-100" href="{{ url_for('member_calendar') }}">
+              <i class="fas fa-external-link-alt me-1"></i> View calendar
+            </a>
+          </div>
         </div>
 
-        <div class="text-light fw-semibold">{{ active_event.title }}</div>
+        <div class="text-light fw-semibold fs-5">
+          {{ active_event.title }}
+        </div>
 
-        <div class="text-secondary small mt-1">
+        <div class="text-secondary small mt-2">
           <i class="far fa-clock me-1"></i>
           {{ active_event.event_date }} • {{ active_event.start_time }}
           {% if active_event.end_time %} - {{ active_event.end_time }}{% endif %}
+
           {% if active_event.location %}
-            &nbsp; • &nbsp;<i class="fas fa-map-marker-alt me-1"></i>{{ active_event.location }}
+            <span class="mx-2">•</span>
+            <i class="fas fa-map-marker-alt me-1"></i>{{ active_event.location }}
           {% endif %}
         </div>
 
         {% if active_event.description %}
-          <div class="text-light mt-2" style="white-space: pre-line;">
+          <div class="text-light mt-3" style="white-space: pre-line;">
             {{ active_event.description }}
           </div>
         {% endif %}
+
       </div>
+    </div>
+  {% endif %}
 
-      <div class="d-flex gap-2">
-        <!-- Mark as seen -->
-        <form method="post" action="{{ url_for('mark_event_seen', event_id=active_event.event_id) }}">
-          <button class="btn btn-outline-warning">
-            <i class="fas fa-check me-1"></i> Got it
-          </button>
-        </form>
+  <!-- ========================= -->
+  <!-- WELCOME + ANNOUNCEMENTS -->
+  <!-- ========================= -->
+  <div class="row mb-4 g-4">
 
-        <!-- Add to calendar (simple link idea) -->
-        <a class="btn btn-outline-light"
-           href="{{ url_for('member_calendar') if 'member_calendar' in globals() else '#' }}">
-          <i class="fas fa-external-link-alt me-1"></i> View calendar
-        </a>
+    <!-- WELCOME CARD (LEFT) -->
+    <div class="col-md-6">
+      <div class="bg-dark rounded-3 shadow-lg p-4 border border-secondary" data-aos="fade-down-right">
+        <img
+          src="{% if user.profile_image %}
+                  {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+               {% else %}
+                  {{ url_for('static', filename='img/logo1.jpg') }}
+               {% endif %}"
+          alt="Member avatar"
+          class="rounded-circle border border-warning me-3"
+          style="width:72px;height:72px;object-fit:cover;"
+        >
+        <div>
+          <p class="mb-1 small text-secondary">Welcome back,</p>
+          <h6 class="mb-1 text-light">
+            Welcome {{ user.first_name }} {{ user.last_name }}
+          </h6>
+          <span class="badge bg-warning text-dark">
+            {{ user.role|capitalize }}
+          </span>
+        </div>
       </div>
+    </div>
 
+    <!-- ANNOUNCEMENTS (RIGHT) -->
+    <div class="col-md-6">
+      <div class="bg-dark bg-opacity-75 rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between" data-aos="fade-down-left">
+        <div>
+          <h4 class="text-warning mb-2">
+            <i class="fas fa-bullhorn me-2"></i> Lodge Announcements
+          </h4>
+          <p class="mb-2 text-light">
+            Stay up to date with meeting nights, special events and important lodge news.
+          </p>
+        </div>
+
+        <p class="mt-2 mb-0 text-secondary small">
+          (Announcements coming soon.)
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================= -->
+  <!-- HERO SECTION -->
+  <!-- ========================= -->
+  <section class="hero-section d-flex align-items-center text-center text-light shadow-lg rounded"
+    style="background-image:
+      linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.35)),
+      url('{{ url_for('static', filename='img/members.png') }}');
+      min-height: 420px;
+      background-size: cover;
+      background-position: center;" data-aos="fade-bottom">
+  </section>
+
+  <h1 class="fw-bold pt-2 text-light text-center" data-aos="fade-down-right">Welcome to Lodge Matariki 476</h1>
+  <p class="fs-5 mt-3 text-center" data-aos="fade-down-left">
+    Honouring tradition. Strengthening brotherhood. Building the future together.
+  </p>
+
+  <!-- ========================= -->
+  <!-- QUICK LINKS -->
+  <!-- ========================= -->
+  <div class="row g-3 mt-1 justify-content-center">
+    <div class="col-md-3" data-aos="fade-down-right">
+      <a href="{{ url_for('profile') }}" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-id-card fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">My Profile</h5>
+            <p class="card-text small">
+              View and update your personal details.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4 justify-content-center" data-aos="fade-down-right">
+      <a href="{{ url_for('member_calendar') }}" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-calendar fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">Calendar</h5>
+            <p class="card-text small">
+              Upcoming lodge meetings &amp; events (coming soon).
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4" data-aos="fade-down-left">
+      <a href="{{ url_for('member_files') }}" class="text-decoration-none">
+        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
+          <div class="card-body text-center d-flex flex-column justify-content-between">
+            <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
+            <h5 class="card-title">Files</h5>
+            <p class="card-text small">
+              Minutes, documents, and resources
+            </p>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
-{% endif %}
+
+  <!-- ========================= -->
+  <!-- WHAT'S NEXT - message from Admin -->
+  <!-- ========================= -->
+  <div class="p-4 bg-dark bg-opacity-50 rounded-3 shadow-sm mt-4" data-aos="fade-down-left">
+    <h4 class="text-warning">
+      <i class="fas fa-bullhorn text-warning fs-2"></i> Message from Admin
+    </h4>
+
+    {% if whats_next %}
+      <div class="alert alert-warning bg-dark border-warning text-light mt-3">
+        <i class="fas fa-star me-2"></i>
+        {{ whats_next.note }}
+      </div>
+    {% else %}
+      <div class="alert alert-secondary bg-dark border-secondary text-muted mt-3">
+        No message from admin yet.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

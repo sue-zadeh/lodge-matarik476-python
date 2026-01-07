@@ -327,7 +327,7 @@
       <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="#">Our Story</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}" href="#">Calendar</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}" href="{{ url_for('member_calendar') }}">Calendar</a>
     </li>
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'announcements' %}active{% endif %}" href="#">Announcements</a>
@@ -353,7 +353,8 @@
       <a class="nav-link nav-link-underline {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'calender' %}active{% endif %}" href="#">Calendar</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'admin_events' %}active{% endif %}" href="{{ url_for('admin_events') }}">Calendar</a>
+
     </li>
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'announcements' %}active{% endif %}" href="#">Announcements</a>
@@ -503,5 +504,8 @@ window.addEventListener('scroll', function() {
 </html>
 
 
-</body>
-</html>
+
+
+
+
+
