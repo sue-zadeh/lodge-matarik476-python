@@ -14,7 +14,7 @@ from email.message import EmailMessage
 import smtplib
 from urllib.parse import urlencode
 import resend
-
+import pytz
 
 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
@@ -1449,7 +1449,14 @@ def contact():
 
         # -------- Send email -------- #
         try:
-            send_email("New enquiry from Lodge website", body)
+            send_email(
+            subject="New enquiry from Lodge website",
+            body=message,
+            name=name,
+            email=email,
+            phone=phone
+            )
+
             flash('Thank you – your message has been sent.', 'success')
         except Exception as e:
             print("EMAIL ERROR:", repr(e))
@@ -1484,17 +1491,41 @@ def contact():
 #         smtp.login(smtp_user, smtp_pass)
 #         smtp.send_message(msg)
 
-def send_email(subject, body):
-    resend.api_key = os.environ.get("RESEND_API_KEY")
 
-    if not resend.api_key:
+   # pip install pytz (optional but recommended)
+
+def send_email(subject, body, name, email, phone, message):
+    api_key = os.getenv("RESEND_API_KEY")
+    if not api_key:
         raise Exception("Missing RESEND_API_KEY in environment")
 
-    to_addr = os.environ.get("EMAIL_TO", "lodge417.form@gmail.com")  # Change to your preferred receipt email
+    resend.api_key = api_key
+
+    to_addr = os.getenv("EMAIL_TO", "lodge417.form@gmail.com")
+
+    nz_time = datetime.now(pytz.timezone("Pacific/Auckland")).strftime("%d %b %Y, %I:%M %p")
+
+    email_text = f"""
+Lodge 417,
+
+You have a new enquiry from the Lodge Matariki 476 website.
+
+Name: {name}
+Email: {email}
+Phone: {phone or "Not provided"}
+
+Message:
+{body}
+
+Received: {nz_time}
+
+---
+"""
+    print("RESEND_API_KEY loaded:", bool(os.getenv("RESEND_API_KEY")))
 
     resend.Emails.send({
-        "from": "contact@lodgematariki476.co.nz",  # Or use "onboarding@resend.dev" for testing (no domain needed)
+        "from": "onboarding@resend.dev",   # change after domain verification
         "to": [to_addr],
-        "subject": subject,
-        "text": body,  # Or "html": body if you make it HTML
+        "subject": f"New enquiry — Lodge — {name}",
+        "text": email_text,
     })
