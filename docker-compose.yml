@@ -10,10 +10,16 @@ services:
       DB_NAME: lodge
       DB_USER: postgres
       DB_PASSWORD: postgres
+      DB_PORT: 5432
+      EMAIL_USER: lodge417.form@gmail.com
+      EMAIL_PASS: agetrjlkwjsestkr
+
       FLASK_SECRET_KEY: "2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5"
       UPLOAD_FOLDER: "static/uploads"
     depends_on:
       - db
+    env_file:
+     - .env
 
   db:
     image: postgres:16

@@ -51,6 +51,11 @@
                    href="{{ url_for('member_event_ics', event_id=e.event_id) }}">
                   <i class="fas fa-download me-1"></i> Save to calendar (.ics)
                 </a>
+                <a class="btn btn-outline-warning btn-sm"
+                   href="{{ url_for('member_event_google', event_id=e.event_id) }}">
+                  <i class="fas fa-download me-1"></i> Save to calendar (.ics)
+                </a>
+
               </div>
 
             </div>

@@ -105,44 +105,102 @@
           </tr>
         </thead>
         <tbody>
-        {% for e in events %}
-          <tr>
-            <td>
-              <strong>{{ e.title }}</strong>
-              {% if e.description %}
-                <div class="small text-muted">{{ e.description }}</div>
-              {% endif %}
-            </td>
+{% for e in events %}
+  <tr>
+    <td class="fw-semibold">{{ e.title }}</td>
+    <td>{{ e.event_date }}</td>
+    <td>
+      {{ e.start_time }}
+      {% if e.end_time %} – {{ e.end_time }}{% endif %}
+    </td>
 
-            <td>{{ e.event_date }}</td>
+    <!-- Audience dropdown (inline update) -->
+    <td>
+      <form method="post" action="{{ url_for('admin_update_event_audience', event_id=e.event_id) }}" class="d-flex gap-2 align-items-center">
+        <select name="audience" class="form-select form-select-sm bg-dark text-light border-secondary" style="max-width:180px;">
+          <option value="members" {% if not e.is_admin_only %}selected{% endif %}>Members & Admins</option>
+          <option value="admin" {% if e.is_admin_only %}selected{% endif %}>Admins only</option>
+        </select>
+        <button class="btn btn-sm btn-outline-warning">Update</button>
+      </form>
+    </td>
 
-            <td>
-              {{ e.start_time }}
-              {% if e.end_time %} – {{ e.end_time }}{% endif %}
-            </td>
+    <td>
+      {% if e.is_pinned %}
+        <span class="badge bg-warning text-dark">Pinned</span>
+      {% else %}
+        <form method="post" action="{{ url_for('admin_pin_event', event_id=e.event_id) }}">
+          <button class="btn btn-sm btn-outline-warning">Pin</button>
+        </form>
+      {% endif %}
+    </td>
 
-            <td>
-              {% if e.is_admin_only %}
-                <span class="badge bg-secondary">Admins only</span>
-              {% else %}
-                <span class="badge bg-info text-dark">Members</span>
-              {% endif %}
-            </td>
+    <td>{{ e.created_by_name or '—' }}</td>
 
-            <td>
-              {% if e.is_pinned %}
-                <span class="badge bg-warning text-dark">Pinned</span>
-              {% else %}
-                —
-              {% endif %}
-            </td>
+    <!-- Actions -->
+    <td class="text-end">
+      <a class="btn btn-sm btn-outline-info" href="{{ url_for('admin_event_ics', event_id=e.event_id) }}">
+        Save to Calendar
+      </a>
 
-            <td>
-              {{ e.created_by_name or '—' }}
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
+      <button class="btn btn-sm btn-outline-light" type="button"
+              data-bs-toggle="collapse" data-bs-target="#editRow{{ e.event_id }}">
+        Edit
+      </button>
+
+      <form method="post" action="{{ url_for('admin_delete_event', event_id=e.event_id) }}" class="d-inline"
+            onsubmit="return confirm('Delete this event?');">
+        <button class="btn btn-sm btn-outline-danger">Delete</button>
+      </form>
+    </td>
+  </tr>
+
+  <!-- Collapsible inline Edit form -->
+  <tr class="collapse" id="editRow{{ e.event_id }}">
+    <td colspan="7" class="bg-dark bg-opacity-50">
+      <form method="post" action="{{ url_for('admin_edit_event', event_id=e.event_id) }}" class="row g-3 p-3">
+        <div class="col-md-6">
+          <label class="form-label text-light">Title *</label>
+          <input name="title" class="form-control bg-dark text-light border-secondary" value="{{ e.title }}" required>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-light">Location</label>
+          <input name="location" class="form-control bg-dark text-light border-secondary" value="{{ e.location or '' }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label text-light">Date *</label>
+          <input type="date" name="event_date" class="form-control bg-dark text-light border-secondary"
+                 value="{{ e.event_date }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label text-light">Start Time *</label>
+          <input type="time" name="start_time" class="form-control bg-dark text-light border-secondary"
+                 value="{{ e.start_time }}" required>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label text-light">End Time</label>
+          <input type="time" name="end_time" class="form-control bg-dark text-light border-secondary"
+                 value="{{ e.end_time or '' }}">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label text-light">Description</label>
+          <textarea name="description" class="form-control bg-dark text-light border-secondary" rows="3">{{ e.description or '' }}</textarea>
+        </div>
+
+        <div class="col-12 text-end">
+          <button class="btn btn-warning">Save Changes</button>
+        </div>
+      </form>
+    </td>
+  </tr>
+{% endfor %}
+</tbody>
+
       </table>
     </div>
   {% else %}

@@ -12,6 +12,9 @@ from app.connect import get_db  # our PostgreSQL connection
 from datetime import timedelta
 from email.message import EmailMessage
 import smtplib
+from urllib.parse import urlencode
+import resend
+
 
 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
@@ -998,81 +1001,6 @@ def member_files():
     return render_template('member_files.html', files=files)
 
 
-# ---------- Contact us ------ #
-
-@app.route('/contact', methods=['GET', 'POST'])
-def contact():
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        phone = request.form.get('phone', '').strip()
-        message = request.form.get('message', '').strip()
-
-        if not name or not email or not message:
-            flash('Please fill in your name, email, and message.', 'error')
-            return redirect(url_for('contact'))
-
-        # -------- Save to DB -------- #
-        try:
-            cursor, conn = getCursor()
-            cursor.execute(
-                """
-                INSERT INTO contact_messages (name, email, phone, message)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (name, email, phone, message)
-            )
-            conn.commit()
-            cursor.close()
-            conn.close()
-        except Exception as e:
-            # If DB fails we still try to send email, but you could log e
-            flash('Sorry, there was a problem saving your message.', 'error')
-            return redirect(url_for('contact'))
-
-        # -------- Prepare email body -------- #
-        body = (
-            f"New enquiry from Lodge website\n\n"
-            f"Name: {name}\n"
-            f"Email: {email}\n"
-            f"Phone: {phone}\n\n"
-            f"Message:\n{message}\n"
-        )
-
-        # -------- Send email -------- #
-        try:
-            send_email("New enquiry from Lodge website", body)
-            flash('Thank you – your message has been sent.', 'success')
-        except Exception as e:
-            # You can log(e) if you want
-            flash('Your message was saved, but there was a problem sending email.', 'error')
-
-        return redirect(url_for('contact'))
-
-    return render_template('contact.html')
-  
-  # ------------ Send Email ------ #
-
-def send_email(subject, body):
-    msg = EmailMessage()
-    msg['Subject'] = subject
-
-    # Fallback to lodge.admin@gmail.com if env variables are not set
-    from_addr = os.environ.get('MAIL_FROM', 'lodge.admin@gmail.com')
-    to_addr = os.environ.get('MAIL_TO', 'lodge.admin@gmail.com')
-
-    msg['From'] = from_addr
-    msg['To'] = to_addr
-    msg.set_content(body)
-
-    # Example Gmail settings – change to their provider if needed
-    smtp_user = os.environ.get('MAIL_USERNAME', 'lodge.admin@gmail.com')
-    smtp_pass = os.environ.get('MAIL_PASSWORD')  # put this in .env
-
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(smtp_user, smtp_pass)
-        smtp.send_message(msg)
-
 #========== EVENTS ======================#
 
 #===== Admin manage events page =======#
@@ -1143,6 +1071,145 @@ def admin_events():
     finally:
         cursor.close()
         conn.close()
+        
+#=========change audience/admin + save to calendar + edit/delete ========#   
+    
+# Admin download .ics for ANY event (admin-only or member events)
+@app.route('/admin/events/<int:event_id>/ics')
+def admin_event_ics(event_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor(dictionary=True)
+    cursor.execute("SELECT * FROM events WHERE event_id = %s LIMIT 1", (event_id,))
+    e = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not e:
+        return "Event not found", 404
+
+    dt_start = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['start_time']).replace(':','')[:4]}00"
+    dt_end = dt_start
+    if e.get('end_time'):
+        dt_end = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['end_time']).replace(':','')[:4]}00"
+
+    title = (e.get('title') or 'Lodge Event').replace('\n', ' ')
+    desc = (e.get('description') or '').replace('\n', '\\n')
+    location = (e.get('location') or '').replace('\n', ' ')
+
+    ics = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Lodge Matariki 476//EN
+BEGIN:VEVENT
+UID:event-{e['event_id']}@lodge
+DTSTART:{dt_start}
+DTEND:{dt_end}
+SUMMARY:{title}
+DESCRIPTION:{desc}
+LOCATION:{location}
+END:VEVENT
+END:VCALENDAR
+"""
+    return (ics, 200, {
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": f"attachment; filename=event_{e['event_id']}.ics"
+    })
+
+
+# Change audience (Admin only / Members & Admins)
+@app.route('/admin/events/<int:event_id>/audience', methods=['POST'])
+def admin_update_event_audience(event_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    audience = request.form.get('audience', 'members')
+    is_admin_only = True if audience == 'admin' else False
+
+    cursor, conn = getCursor(dictionary=True)
+
+    # update audience
+    cursor.execute("""
+        UPDATE events
+        SET is_admin_only = %s,
+            updated_at = NOW()
+        WHERE event_id = %s
+    """, (is_admin_only, event_id))
+    conn.commit()
+
+    # If it becomes visible to members, make it "NEW" again for members
+    if not is_admin_only:
+        cursor.execute("DELETE FROM event_reads WHERE event_id = %s", (event_id,))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    flash('Audience updated.', 'success')
+    return redirect(url_for('admin_events'))
+
+
+# Edit event (simple: same page, per-row form)
+@app.route('/admin/events/<int:event_id>/edit', methods=['POST'])
+def admin_edit_event(event_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    event_date = request.form.get('event_date', '').strip()
+    start_time = request.form.get('start_time', '').strip()
+    end_time = request.form.get('end_time', '').strip()
+    location = request.form.get('location', '').strip()
+
+    if end_time == '':
+        end_time = None
+
+    if not title or not event_date or not start_time:
+        flash('Title, Date, and Start time are required.', 'error')
+        return redirect(url_for('admin_events'))
+
+    cursor, conn = getCursor(dictionary=True)
+
+    cursor.execute("""
+        UPDATE events
+        SET title=%s,
+            description=%s,
+            event_date=%s::date,
+            start_time=%s::time,
+            end_time=%s::time,
+            location=%s,
+            updated_at=NOW()
+        WHERE event_id=%s
+    """, (title, description, event_date, start_time, end_time, location, event_id))
+    conn.commit()
+
+    # Event changed => members should see NEW again (only matters for member-visible events)
+    cursor.execute("DELETE FROM event_reads WHERE event_id = %s", (event_id,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    flash('Event updated.', 'success')
+    return redirect(url_for('admin_events'))
+
+
+# Delete event
+@app.route('/admin/events/<int:event_id>/delete', methods=['POST'])
+def admin_delete_event(event_id):
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor(dictionary=True)
+    cursor.execute("DELETE FROM events WHERE event_id = %s", (event_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash('Event deleted.', 'success')
+    return redirect(url_for('admin_events'))
+
 
 #---- 2- Admin pin/unpin event -----#
 
@@ -1299,4 +1366,135 @@ END:VCALENDAR
     return (ics, 200, {
         "Content-Type": "text/calendar; charset=utf-8",
         "Content-Disposition": f"attachment; filename=event_{e['event_id']}.ics"
+    })
+
+
+#==== open Google Calendar ====#
+
+@app.route('/member/events/<int:event_id>/google')
+def member_event_google(event_id):
+    if session.get('role') not in ('member', 'admin'):
+        return redirect(url_for('login'))
+
+    cursor, conn = getCursor(dictionary=True)
+    cursor.execute("""
+        SELECT *
+        FROM events
+        WHERE event_id = %s
+        LIMIT 1
+    """, (event_id,))
+    e = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not e:
+        return "Event not found", 404
+
+    # Google wants YYYYMMDDTHHMMSS format (no timezone here -> treated as local)
+    start = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['start_time'])[:5].replace(':','')}00"
+    end = start
+    if e.get('end_time'):
+        end = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['end_time'])[:5].replace(':','')}00"
+
+    params = {
+        "action": "TEMPLATE",
+        "text": e.get("title") or "Lodge Event",
+        "details": e.get("description") or "",
+        "location": e.get("location") or "",
+        "dates": f"{start}/{end}",
+    }
+    return redirect("https://calendar.google.com/calendar/render?" + urlencode(params))
+
+
+  # ---------- Contact us ------ #
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        message = request.form.get('message', '').strip()
+
+        if not name or not email or not message:
+            flash('Please fill in your name, email, and message.', 'error')
+            return redirect(url_for('contact'))
+
+        # -------- Save to DB -------- #
+        try:
+            cursor, conn = getCursor()
+            cursor.execute(
+                """
+                INSERT INTO contact_messages (name, email, phone, message)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (name, email, phone, message)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            # If DB fails we still try to send email, but you could log e
+            flash('Sorry, there was a problem saving your message.', 'error')
+            return redirect(url_for('contact'))
+
+        # -------- Prepare email body -------- #
+        body = (
+            f"New enquiry from Lodge website\n\n"
+            f"Name: {name}\n"
+            f"Email: {email}\n"
+            f"Phone: {phone}\n\n"
+            f"Message:\n{message}\n"
+        )
+
+        # -------- Send email -------- #
+        try:
+            send_email("New enquiry from Lodge website", body)
+            flash('Thank you – your message has been sent.', 'success')
+        except Exception as e:
+            print("EMAIL ERROR:", repr(e))
+            # You can log(e) if you want
+            flash('Your message was saved, but there was a problem sending email.', 'error')
+
+        return redirect(url_for('contact'))
+
+    return render_template('contact.html')
+  
+  # ------------ Send Email ------ #
+
+# def send_email(subject, body):
+#     msg = EmailMessage()
+#     msg["Subject"] = subject
+
+#     # Use your existing .env keys
+#     smtp_user = os.environ.get("EMAIL_USER")
+#     smtp_pass = os.environ.get("EMAIL_PASS")
+
+#     if not smtp_user or not smtp_pass:
+#         raise Exception("Missing EMAIL_USER / EMAIL_PASS in environment")
+
+#     # where to send (you can send to yourself)
+#     to_addr = os.environ.get("EMAIL_TO", smtp_user)
+
+#     msg["From"] = smtp_user
+#     msg["To"] = to_addr
+#     msg.set_content(body)
+
+#     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+#         smtp.login(smtp_user, smtp_pass)
+#         smtp.send_message(msg)
+
+def send_email(subject, body):
+    resend.api_key = os.environ.get("RESEND_API_KEY")
+
+    if not resend.api_key:
+        raise Exception("Missing RESEND_API_KEY in environment")
+
+    to_addr = os.environ.get("EMAIL_TO", "lodge417.form@gmail.com")  # Change to your preferred receipt email
+
+    resend.Emails.send({
+        "from": "contact@lodgematariki476.co.nz",  # Or use "onboarding@resend.dev" for testing (no domain needed)
+        "to": [to_addr],
+        "subject": subject,
+        "text": body,  # Or "html": body if you make it HTML
     })
