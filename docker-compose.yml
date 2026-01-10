@@ -13,7 +13,7 @@ services:
       DB_PORT: 5432
       EMAIL_USER: lodge417.form@gmail.com
       EMAIL_PASS: agetrjlkwjsestkr
-      RESEND_API_KEY: re_cJTt4jCS_8rT14dMDzQW3PvUKfpY9JyVR
+      RESEND_API_KEY: re_Vd9LtqhL_6aFtQBBYffgM94KC9Yv4qaEF
 
       FLASK_SECRET_KEY: "2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5"
       UPLOAD_FOLDER: "static/uploads"
