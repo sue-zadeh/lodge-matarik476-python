@@ -6,11 +6,11 @@ services:
     ports:
       - "8000:8000"              # host:container
     environment:
-      DB_HOST: db
-      DB_NAME: lodge
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_PORT: 5432
+      # DB_HOST: db
+      # DB_NAME: lodge
+      # DB_USER: postgres
+      # DB_PASSWORD: postgres
+      # DB_PORT: 5432
       RESEND_API_KEY: re_Vd9LtqhL_6aFtQBBYffgM94KC9Yv4qaEF
       EMAIL_TO: lodge417.form@gmail.com
       EMAIL_PASS: agetrjlkwjsestkr

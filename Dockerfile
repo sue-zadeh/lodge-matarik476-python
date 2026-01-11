@@ -1,25 +1,23 @@
-# Use official slim Python image (lighter & faster)
+# Use official Python 3.12 slim image (lightweight, fast)
 FROM python:3.12-slim
 
-# Don't create .pyc files, send logs straight to console
+# Prevent Python from writing .pyc files & buffer logs
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Set working directory
 WORKDIR /app
 
-# 1) Install dependencies first (better caching)
+# Install dependencies first (better Docker caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2) Copy the entire project code
+# Copy the entire project (including connect.py at root)
 COPY . .
 
-# 3) Expose port (Gunicorn will listen here)
+# Expose the port Gunicorn will use (8000 is standard for Railway)
 EXPOSE 8000
 
-# 4) Run with Gunicorn (better for production)
-# -b 0.0.0.0:8000   → bind to all interfaces
-# --workers 2        → 2 workers (adjust based on CPU)
-# run:app            → module:Flask_app_object
+# Run Gunicorn – bind to 0.0.0.0:8000
+# run:app → run.py has the 'app' Flask object
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "run:app"]
