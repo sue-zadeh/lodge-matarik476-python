@@ -8,7 +8,7 @@ import psycopg2
 import psycopg2.extras
 from datetime import datetime, date
 from app import app
-from app.connect import get_db  # our PostgreSQL connection
+from connect import get_db  # our PostgreSQL connection
 from datetime import timedelta
 from email.message import EmailMessage
 import smtplib
