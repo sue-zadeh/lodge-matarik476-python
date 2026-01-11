@@ -16,7 +16,6 @@ from urllib.parse import urlencode
 import resend
 import pytz
 
-
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
 PASSWORD_SALT = '1234abcd'
@@ -32,7 +31,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 FILE_UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'files')
 app.config['FILE_UPLOAD_FOLDER'] = FILE_UPLOAD_FOLDER
 
-
 # ---allowed file
 ALLOWED_FILE_EXTENSIONS = {
     'pdf', 'doc', 'docx', 'xls', 'xlsx',
@@ -41,8 +39,6 @@ ALLOWED_FILE_EXTENSIONS = {
 
 def allowed_file_generic(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_FILE_EXTENSIONS
-
-
 
 # ---------- DB helper ----------
 
@@ -60,12 +56,10 @@ def getCursor(dictionary: bool = False):
 
     return cursor, conn
 
-
 # ---------- File helpers ----------
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
-
 
 def save_profile_photo(photo):
     if photo and allowed_file(photo.filename):
