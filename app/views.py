@@ -1488,25 +1488,28 @@ def contact():
 
    # pip install pytz (optional but recommended)
 
-def send_email(subject, body, name, email, phone, message):
+
+def send_email(subject, body, name, email, phone):
     api_key = os.getenv("RESEND_API_KEY")
     if not api_key:
-        raise Exception("Missing RESEND_API_KEY in environment")
+        raise Exception("Missing RESEND_API_KEY in environment variables!")
 
     resend.api_key = api_key
 
+    # Recipient – use EMAIL_TO from env, fallback to your Gmail
     to_addr = os.getenv("EMAIL_TO", "lodge417.form@gmail.com")
 
-    nz_time = datetime.now(pytz.timezone("Pacific/Auckland")).strftime("%d %b %Y, %I:%M %p")
+    # NZ time
+    nz_time = datetime.now(pytz.timezone("Pacific/Auckland")).strftime("%d %b %Y at %I:%M %p NZDT")
 
-    email_text = f"""
-Lodge 417,
+    # Nice email body
+    email_text = f"""Hi Lodge Matariki 476,
 
-You have a new enquiry from the Lodge Matariki 476 website.
+You have received a new enquiry from the website:
 
-Name: {name}
-Email: {email}
-Phone: {phone or "Not provided"}
+Name:     {name}
+Email:    {email}
+Phone:    {phone if phone else 'Not provided'}
 
 Message:
 {body}
@@ -1514,12 +1517,18 @@ Message:
 Received: {nz_time}
 
 ---
+This message was sent via Resend.com
 """
-    print("RESEND_API_KEY loaded:", bool(os.getenv("RESEND_API_KEY")))
 
-    resend.Emails.send({
-        "from": "onboarding@resend.dev",   # change after domain verification
-        "to": [to_addr],
-        "subject": f"New enquiry — Lodge — {name}",
-        "text": email_text,
-    })
+    try:
+        resend.Emails.send({
+            "from": "onboarding@resend.dev",  # Safe for testing
+            "to": [to_addr],
+            "subject": subject,
+            "text": email_text,
+        })
+        print("Email sent successfully to", to_addr)
+        return True
+    except Exception as e:
+        print("RESEND EMAIL FAILED:", str(e))
+        raise  # Re-raise so contact route can catch it
