@@ -4,23 +4,15 @@ services:
   web:
     build: .
     ports:
-      - "8000:8000"              # host:container
+      - "8000:8000"  # Consistent with Dockerfile
     environment:
-      # DB_HOST: db
-      # DB_NAME: lodge
-      # DB_USER: postgres
-      # DB_PASSWORD: postgres
-      # DB_PORT: 5432
-      RESEND_API_KEY: re_Vd9LtqhL_6aFtQBBYffgM94KC9Yv4qaEF
-      EMAIL_TO: lodge417.form@gmail.com
-      EMAIL_PASS: agetrjlkwjsestkr
-
-      FLASK_SECRET_KEY: "2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5"
-      UPLOAD_FOLDER: "static/uploads"
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_TO=lodge417.form@gmail.com
+      - FLASK_SECRET_KEY= "2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5"
     depends_on:
       - db
-    env_file:
-     - .:/app
+    volumes:
+      - .:/app
 
   db:
     image: postgres:16
@@ -32,11 +24,11 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      # persist db data
       - postgres_data:/var/lib/postgresql/data
-      # run the schema on first startup
-      # - ./app/database.psql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-
 
 volumes:
   postgres_data:
+
+      # EMAIL_PASS: agetrjlkwjsestkr
+      # RESEND_API_KEY: re_Vd9LtqhL_6aFtQBBYffgM94KC9Yv4qaEF
+
