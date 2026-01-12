@@ -69,11 +69,7 @@ def save_profile_photo(photo):
         return filename
     return None
 
-
 # ---------- Role helper ----------
-
-
-
 
 def render_login_or_register(registered, toLogin, msg, username):
     if toLogin:
