@@ -1417,6 +1417,7 @@ def contact():
         # -------- Save to DB -------- #
         try:
             cursor, conn = getCursor()
+            print("DB cursor opened, executing INSERT...")  # Debug
             cursor.execute(
                 """
                 INSERT INTO contact_messages (name, email, phone, message)
