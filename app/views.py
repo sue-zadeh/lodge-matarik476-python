@@ -1531,6 +1531,6 @@ This message was sent via Resend.com
         raise  # Re-raise so contact route can catch it
       
  #===== minimal health-check route =====#     
-# @app.route('/health')
-# def health():
-#     return "OK", 200
+@app.route('/health')
+def health():
+    return "OK", 200
