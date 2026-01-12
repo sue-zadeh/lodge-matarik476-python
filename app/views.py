@@ -1534,3 +1534,4 @@ This message was sent via Resend.com
 @app.route('/health')
 def health():
     return "OK", 200
+  
