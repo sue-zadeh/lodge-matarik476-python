@@ -1529,3 +1529,8 @@ This message was sent via Resend.com
     except Exception as e:
         print("RESEND EMAIL FAILED:", str(e))
         raise  # Re-raise so contact route can catch it
+      
+ #===== minimal health-check route =====#     
+@app.route('/health')
+def health():
+    return "OK", 200
