@@ -1,43 +1,44 @@
-# connect.py (at root level)
 import os
 import psycopg2
+from urllib.parse import urlparse
 
 def get_db():
-    # First, check if we're on Railway (has DATABASE_URL)
-    database_url = os.getenv("DATABASE_URL")
-    
+    """
+    Local dev:
+      uses DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+
+    Railway:
+      uses DATABASE_URL automatically (Railway provides it)
+    """
+
+    database_url = os.environ.get("DATABASE_URL")
+
+    # ---- Railway / Production ----
     if database_url:
-        # Production mode (Railway)
-        print("Using Railway DATABASE_URL")
-        try:
-            conn = psycopg2.connect(database_url)
-            conn.autocommit = False  # Recommended for transactions
-            print("Database connection successful (Railway)!")
-            return conn
-        except Exception as e:
-            print("Railway DB connection failed:", str(e))
-            raise
+        # DATABASE_URL example:
+        # postgres://user:pass@host:port/dbname
+        result = urlparse(database_url)
 
-    # Fallback to local development (use separate vars from .env)
-    print("Using local PostgreSQL (development mode)")
-    db_name = os.getenv("DB_NAME", "lodge")
-    db_user = os.getenv("DB_USER", "postgrees")
-    db_password = os.getenv("DB_PASSWORD", "postgrees")
-    db_host = os.getenv("DB_HOST", "localhost")
-    db_port = os.getenv("DB_PORT", "5433")
-
-    try:
-        conn = psycopg2.connect(
-            dbname=db_name,
-            user=db_user,
-            password=db_password,
-            host=db_host,
-            port=db_port
+        return psycopg2.connect(
+            dbname=result.path[1:],   # remove leading "/"
+            user=result.username,
+            password=result.password,
+            host=result.hostname,
+            port=result.port,
+            sslmode="require"         # important for Railway
         )
-        conn.autocommit = False
-        print("Database connection successful (local)!")
-        return conn
-    except Exception as e:
-        print("Local DB connection failed:", str(e))
-        raise
-      
+
+    # ---- Local Development ----
+    host = os.environ.get("DB_HOST", "localhost")
+    port = int(os.environ.get("DB_PORT", "5433"))  # your docker mapped port
+    dbname = os.environ.get("DB_NAME", "lodge")
+    user = os.environ.get("DB_USER", "postgres")
+    password = os.environ.get("DB_PASSWORD", "postgres")
+
+    return psycopg2.connect(
+        host=host,
+        port=port,
+        dbname=dbname,
+        user=user,
+        password=password
+    )
