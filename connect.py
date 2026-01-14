@@ -1,44 +1,54 @@
+# connect.py
 import os
 import psycopg2
 from urllib.parse import urlparse
 
 def get_db():
     """
-    Local dev:
-      uses DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
-
-    Railway:
-      uses DATABASE_URL automatically (Railway provides it)
+    Railway: use DATABASE_URL (recommended)
+    Local/Docker: fallback to DB_* vars
     """
 
     database_url = os.environ.get("DATABASE_URL")
 
-    # ---- Railway / Production ----
+    # --- 1) Railway / Production ---
     if database_url:
-        # DATABASE_URL example:
-        # postgres://user:pass@host:port/dbname
-        result = urlparse(database_url)
+        # DATABASE_URL might be internal or public.
+        # If it's public proxy (shuttle.proxy.rlwy.net) you may need SSL.
+        parsed = urlparse(database_url)
 
-        return psycopg2.connect(
-            dbname=result.path[1:],   # remove leading "/"
-            user=result.username,
-            password=result.password,
-            host=result.hostname,
-            port=result.port,
-            sslmode="require"         # important for Railway
+        host = parsed.hostname
+        port = parsed.port or 5432
+        user = parsed.username
+        password = parsed.password
+        dbname = parsed.path.lstrip("/")
+
+        # SSL only needed for PUBLIC proxy URL typically
+        # internal host: postgres.railway.internal usually does not need sslmode=require
+        use_ssl = ("shuttle.proxy.rlwy.net" in (host or "")) or ("proxy.rlwy.net" in (host or ""))
+
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            dbname=dbname,
+            sslmode="require" if use_ssl else "prefer"
         )
+        return conn
 
-    # ---- Local Development ----
-    host = os.environ.get("DB_HOST", "localhost")
-    port = int(os.environ.get("DB_PORT", "5433"))  # your docker mapped port
-    dbname = os.environ.get("DB_NAME", "lodge")
-    user = os.environ.get("DB_USER", "postgres")
-    password = os.environ.get("DB_PASSWORD", "postgres")
+    # --- 2) Local fallback (Docker/Dev) ---
+    db_name = os.environ.get("DB_NAME", "lodge")
+    db_user = os.environ.get("DB_USER", "postgres")
+    db_password = os.environ.get("DB_PASSWORD", "postgres")
+    db_host = os.environ.get("DB_HOST", "localhost")
+    db_port = int(os.environ.get("DB_PORT", "5433"))  # your docker port
 
-    return psycopg2.connect(
-        host=host,
-        port=port,
-        dbname=dbname,
-        user=user,
-        password=password
+    conn = psycopg2.connect(
+        host=db_host,
+        port=db_port,
+        user=db_user,
+        password=db_password,
+        dbname=db_name
     )
+    return conn
