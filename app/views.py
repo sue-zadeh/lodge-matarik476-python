@@ -1539,13 +1539,13 @@ def health():
   
     #==================== temporary route =======#
   
-  @app.route("/debug/db")
-def debug_db():
-    cursor, conn = getCursor(dictionary=True)
-    cursor.execute("SELECT current_database() AS db, inet_server_addr() AS host, inet_server_port() AS port;")
-    row = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return row
+#   @app.route("/debug/db")
+# def debug_db():
+#     cursor, conn = getCursor(dictionary=True)
+#     cursor.execute("SELECT current_database() AS db, inet_server_addr() AS host, inet_server_port() AS port;")
+#     row = cursor.fetchone()
+#     cursor.close()
+#     conn.close()
+#     return row
 
   
