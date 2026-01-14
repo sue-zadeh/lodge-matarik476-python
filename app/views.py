@@ -41,18 +41,6 @@ def allowed_file_generic(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_FILE_EXTENSIONS
   
   
-  #==================== temporary route =======#
-  
-  @app.route("/debug/db")
-def debug_db():
-    cursor, conn = getCursor(dictionary=True)
-    cursor.execute("SELECT current_database() AS db, inet_server_addr() AS host, inet_server_port() AS port;")
-    row = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return row
-
-
 # ---------- DB helper ----------
 
 def getCursor(dictionary: bool = False):
@@ -1547,4 +1535,17 @@ This message was sent via Resend.com
 @app.route('/health')
 def health():
     return "OK", 200
+  
+  
+    #==================== temporary route =======#
+  
+  @app.route("/debug/db")
+def debug_db():
+    cursor, conn = getCursor(dictionary=True)
+    cursor.execute("SELECT current_database() AS db, inet_server_addr() AS host, inet_server_port() AS port;")
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return row
+
   
