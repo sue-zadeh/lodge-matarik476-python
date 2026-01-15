@@ -15,6 +15,7 @@ import smtplib
 from urllib.parse import urlencode
 import resend
 import pytz
+from contextlib import contextmanager
 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
@@ -100,7 +101,28 @@ def home():
 
     # Not logged in → public landing page
     return render_template("index.html")
+  
+#---------------Cursor --------------#
 
+@contextmanager
+def db_cursor(dictionary=False):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) if dictionary else conn.cursor()
+    try:
+        yield cur, conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        try:
+            cur.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 # ------ register form ------- #
 
@@ -113,6 +135,7 @@ def register():
         password = request.form['password']
         confirm_password = request.form['confirm_password']
         email = request.form['email']
+        address = request.form.get('address', '').strip()
         birth_date = request.form['birth_date']
         phone = request.form.get('phone', '')
 
@@ -153,6 +176,9 @@ def register():
             not re.search(r'[0-9]', password)):
             flash('Password must be at least 8 characters and include upper, lower and number.', 'error')
             return redirect(url_for('register'))
+        if not address:
+           flash('Address is required.', 'error')
+           return redirect(url_for('register'))
 
         try:
             birth_date_obj = datetime.strptime(birth_date, '%Y-%m-%d')
@@ -201,13 +227,13 @@ def register():
             """
             INSERT INTO users (
                 username, first_name, last_name,
-                email, password, phone,
+                email, password, phone, address,
                 birth_date, profile_image, role
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (username, first_name, last_name,
-             email, password_hash, phone,
+             email, password_hash, phone, address,
              birth_date, profile_image, role)
         )
         conn.commit()
@@ -226,12 +252,12 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-
+        
         cursor, conn = getCursor(dictionary=True)
         cursor.execute("""
             SELECT user_id, username, password, role
             FROM users
-            WHERE username = %s AND is_active = TRUE
+            WHERE username = %s AND COALESCE(is_active, TRUE) = TRUE
         """, (username,))
         user = cursor.fetchone()
         cursor.close()
