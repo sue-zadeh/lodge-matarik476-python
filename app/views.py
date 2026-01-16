@@ -90,7 +90,7 @@ def norm_role(role):
 # ---------- Routes ----------
 @app.context_processor
 def inject_current_year():
-    return {'current_year': datetime.now().year, 'date' : date}
+    return {'current_year': datetime.now().year, 'date' : date }
 
 @app.route("/")
 def home():
@@ -250,26 +250,29 @@ def register():
 
 #-------------- Login -------------#
 
-#-------------- Login -------------#
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
 
-        cursor, conn = getCursor(dictionary=True)
-        cursor.execute("""
-            SELECT user_id, username, password, role
-            FROM users
-            WHERE username = %s AND COALESCE(is_active, TRUE) = TRUE
-        """, (username,))
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
+        try:
+            with db_cursor(dictionary=True) as (cursor, conn):
+                cursor.execute("""
+                    SELECT user_id, username, password, role
+                    FROM users
+                    WHERE username = %s AND COALESCE(is_active, TRUE) = TRUE
+                    LIMIT 1
+                """, (username,))
+                user = cursor.fetchone()
+
+        except Exception as e:
+            app.logger.exception("Login DB error")
+            flash('Database error. Please try again.', 'danger')
+            return redirect(url_for('login'))
 
         if user and hashing.check_value(user['password'], password, PASSWORD_SALT):
-            role = (user.get('role') or '').strip().lower()   # ✅ normalize
+            role = norm_role(user.get('role'))
 
             session.permanent = True
             session['user_id'] = user['user_id']
@@ -288,6 +291,9 @@ def login():
         return redirect(url_for('login'))
 
     return render_template("login.html")
+
+
+
 
 # ------ Routes for home_members and home_admins ------ #
 
@@ -730,7 +736,7 @@ def admin_change_role(user_id):
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
-    new_role = request.form.get('role').strip().lower()
+    new_role = request.form.get('role')
     if new_role not in ['admin', 'member']:
         flash("Invalid role selected.", "danger")
         return redirect(url_for('admin_manage_users'))
