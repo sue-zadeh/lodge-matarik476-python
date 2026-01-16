@@ -94,16 +94,16 @@ def inject_current_year():
 
 @app.route("/")
 def home():
-    role = session.get('role')
+    role = norm_role(session.get('role'))  # norm_role function
 
     if role == 'admin':
         return redirect(url_for('admin_home'))
     elif role == 'member':
         return redirect(url_for('member_home'))
 
-    # Not logged in → public landing page
+    # If no valid role or not logged in → show public page
     return render_template("index.html")
-  
+    
 #---------------Cursor --------------#
 
 @contextmanager
