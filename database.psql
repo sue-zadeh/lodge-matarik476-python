@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS events (
   start_time TIME NOT NULL,
   end_time TIME,
   location VARCHAR(255),
+  is_admin_only BOOLEAN NOT NULL DEFAULT FALSE,
   is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
   created_by INT REFERENCES users(user_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
