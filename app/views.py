@@ -730,7 +730,7 @@ def admin_change_role(user_id):
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
-    new_role = (request.form.get('role') or '').strip().lower()
+    new_role = request.form.get('role').strip().lower()
     if new_role not in ['admin', 'member']:
         flash("Invalid role selected.", "danger")
         return redirect(url_for('admin_manage_users'))
