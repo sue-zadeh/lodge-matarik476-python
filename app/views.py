@@ -83,12 +83,14 @@ def render_login_or_register(registered, toLogin, msg, username):
 
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
+def norm_role(role):
+    """Normalize role text from DB/session (handles None, spaces, casing)."""
+    return (role or "").strip().lower()
 
 # ---------- Routes ----------
 @app.context_processor
 def inject_current_year():
-    return {'current_year': datetime.now().year}
+    return {'current_year': datetime.now().year, 'date' : date}
 
 @app.route("/")
 def home():
@@ -176,6 +178,7 @@ def register():
             not re.search(r'[0-9]', password)):
             flash('Password must be at least 8 characters and include upper, lower and number.', 'error')
             return redirect(url_for('register'))
+          
         if not address:
            flash('Address is required.', 'error')
            return redirect(url_for('register'))
@@ -252,32 +255,37 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        
-        cursor, conn = getCursor(dictionary=True)
-        cursor.execute("""
-            SELECT user_id, username, password, role
-            FROM users
-            WHERE username = %s AND COALESCE(is_active, TRUE) = TRUE
-        """, (username,))
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
+
+        try:
+            with db_cursor(dictionary=True) as (cursor, conn):
+                cursor.execute("""
+                    SELECT user_id, username, password, role
+                    FROM users
+                    WHERE username = %s AND COALESCE(is_active, TRUE) = TRUE
+                    LIMIT 1
+                """, (username,))
+                user = cursor.fetchone()
+
+        except Exception as e:
+            app.logger.exception("Login DB error")
+            flash('Database error. Please try again.', 'danger')
+            return redirect(url_for('login'))
 
         if user and hashing.check_value(user['password'], password, PASSWORD_SALT):
-            session.permanent = True   # ← needed for timeout
+            role = norm_role(user.get('role'))
+
+            session.permanent = True
             session['user_id'] = user['user_id']
             session['username'] = user['username']
-            session['role'] = user['role']
+            session['role'] = role
 
             flash(f'Welcome, {user["username"]}!', 'success')
 
-            # Role-based homepage
-            if user['role'] == 'admin':
+            if role == 'admin':
                 return redirect(url_for('admin_home'))
-            elif user['role'] == 'member':
+            if role == 'member':
                 return redirect(url_for('member_home'))
-            else:
-                return redirect(url_for('home'))
+            return redirect(url_for('home'))
 
         flash('Invalid username or password.', 'danger')
         return redirect(url_for('login'))
@@ -286,63 +294,64 @@ def login():
 
 
 
+
 # ------ Routes for home_members and home_admins ------ #
 
 @app.route('/member/home')
 def member_home():
-    if session.get('role') != 'member':
+    if norm_role(session.get('role')) != 'member':
         return redirect(url_for('login'))
 
     user_id = session.get('user_id')
-    cursor, conn = getCursor(dictionary=True)
 
-    # --- member info ---
-    cursor.execute("""
-        SELECT user_id, username, first_name, last_name, profile_image, role
-        FROM users
-        WHERE user_id = %s
-    """, (user_id,))
-    user = cursor.fetchone()
+    try:
+        with db_cursor(dictionary=True) as (cursor, conn):
 
-    # --- NEW FILES notification data ---
-    cursor.execute("""
-        SELECT f.file_id, f.subject, f.created_at
-        FROM files f
-        LEFT JOIN file_reads fr
-          ON fr.file_id = f.file_id AND fr.user_id = %s
-        WHERE fr.user_id IS NULL
-          AND f.is_admin_only = FALSE
-        ORDER BY f.created_at DESC
-        LIMIT 5
-    """, (user_id,))
-    new_files = cursor.fetchall()
-    new_files_count = len(new_files)
+            cursor.execute("""
+                SELECT user_id, username, first_name, last_name, profile_image, role
+                FROM users
+                WHERE user_id = %s
+            """, (user_id,))
+            user = cursor.fetchone()
 
-    # --- Admin message to members (latest) ---
-    cursor.execute("""
-        SELECT note
-        FROM admin_messages
-        ORDER BY created_at DESC, id DESC
-        LIMIT 1
-    """)
-    whats_next = cursor.fetchone()
+            cursor.execute("""
+                SELECT f.file_id, f.subject, f.created_at
+                FROM files f
+                LEFT JOIN file_reads fr
+                  ON fr.file_id = f.file_id AND fr.user_id = %s
+                WHERE fr.user_id IS NULL
+                  AND f.is_admin_only = FALSE
+                ORDER BY f.created_at DESC
+                LIMIT 5
+            """, (user_id,))
+            new_files = cursor.fetchall()
+            new_files_count = len(new_files)
 
-    # --- show event + NEW badge ---
-    active_event = get_active_event(cursor)
+            cursor.execute("""
+                SELECT note
+                FROM admin_messages
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+            """)
+            whats_next = cursor.fetchone()
 
-    event_is_new = False
-    if active_event:
-        cursor.execute("""
-            SELECT 1
-            FROM event_reads
-            WHERE event_id = %s AND user_id = %s
-            LIMIT 1
-        """, (active_event["event_id"], user_id))
-        seen = cursor.fetchone()
-        event_is_new = (seen is None)
+            active_event = get_active_event(cursor)
 
-    cursor.close()
-    conn.close()
+            event_is_new = False
+            if active_event:
+                cursor.execute("""
+                    SELECT 1
+                    FROM event_reads
+                    WHERE event_id = %s AND user_id = %s
+                    LIMIT 1
+                """, (active_event["event_id"], user_id))
+                seen = cursor.fetchone()
+                event_is_new = (seen is None)
+
+    except Exception:
+        app.logger.exception("member_home error")
+        flash("Sorry, member home failed to load (DB error).", "danger")
+        return redirect(url_for('home'))
 
     return render_template(
         'home_member.html',
@@ -354,60 +363,50 @@ def member_home():
         whats_next=whats_next
     )
 
-
 # ----- Admin Home ------ #
 
 @app.route('/admin/home')
 def admin_home():
-    # only admins can see this page
-    if session.get('role') != 'admin':
+    if norm_role(session.get('role')) != 'admin':
         return redirect(url_for('login'))
 
-    user = None
-    latest_note = ""   # default if there is no message yet
-    contact_messages = []
     user_id = session.get('user_id')
+    user = None
+    latest_note = ""
+    contact_messages = []
 
-    if user_id:
-        cursor, conn = getCursor(dictionary=True)
+    try:
+        with db_cursor(dictionary=True) as (cursor, conn):
 
-        # Get admin user info
-        cursor.execute(
-            """
-            SELECT user_id, username, first_name, last_name, profile_image, role
-            FROM users
-            WHERE user_id = %s
-            """,
-            (user_id,)
-        )
-        user = cursor.fetchone()
+            cursor.execute("""
+                SELECT user_id, username, first_name, last_name, profile_image, role
+                FROM users
+                WHERE user_id = %s
+            """, (user_id,))
+            user = cursor.fetchone()
 
-        # Get last "Message from Admin" (from admin_messages table)
-        cursor.execute(
-            """
-            SELECT note
-            FROM admin_messages
-            ORDER BY created_at DESC, id DESC
-            LIMIT 1
-            """
-        )
-        row = cursor.fetchone()
-        if row:
-            latest_note = row["note"]
+            cursor.execute("""
+                SELECT note
+                FROM admin_messages
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+            """)
+            row = cursor.fetchone()
+            if row:
+                latest_note = row["note"]
 
-        # Get recent contact form messages (for dashboard block)
-        cursor.execute(
-            """
-            SELECT id, name, email, phone, message, created_at
-            FROM contact_messages
-            ORDER BY created_at DESC
-            LIMIT 5
-            """
-        )
-        contact_messages = cursor.fetchall()
+            cursor.execute("""
+                SELECT id, name, email, phone, message, created_at
+                FROM contact_messages
+                ORDER BY created_at DESC
+                LIMIT 5
+            """)
+            contact_messages = cursor.fetchall()
 
-        cursor.close()
-        conn.close()
+    except Exception:
+        app.logger.exception("admin_home error")
+        flash("Sorry, admin home failed to load (DB error).", "danger")
+        return redirect(url_for('home'))
 
     return render_template(
         'home_admin.html',
@@ -976,47 +975,41 @@ def delete_file(file_id):
 # ------------ Member/Files page -------#
 @app.route('/member/files')
 def member_files():
-    if session.get('role') != 'member':
+    if norm_role(session.get('role')) != 'member':
         return redirect(url_for('login'))
 
     user_id = session['user_id']
 
-    cursor, conn = getCursor(dictionary=True)
+    try:
+        with db_cursor(dictionary=True) as (cursor, conn):
 
-    # members should NOT see admin-only files
-    cursor.execute(
-        """
-        SELECT f.file_id,
-               f.subject,
-               f.description,
-               f.filename,
-               f.created_at,
-               u.username AS uploader
-        FROM files f
-        JOIN users u ON f.uploader_id = u.user_id
-        WHERE f.is_admin_only = FALSE
-        ORDER BY f.created_at DESC
-        """
-    )
-    files = cursor.fetchall()
+            cursor.execute("""
+                SELECT f.file_id,
+                       f.subject,
+                       f.description,
+                       f.filename,
+                       f.created_at,
+                       u.username AS uploader
+                FROM files f
+                JOIN users u ON f.uploader_id = u.user_id
+                WHERE f.is_admin_only = FALSE
+                ORDER BY f.created_at DESC
+            """)
+            files = cursor.fetchall()
 
-    # mark as read (only for the files the member can see)
-    for f in files:
-        cursor.execute(
-            """
-            INSERT INTO file_reads (user_id, file_id)
-            VALUES (%s, %s)
-            ON CONFLICT (user_id, file_id) DO NOTHING
-            """,
-            (user_id, f['file_id'])
-        )
+            for f in files:
+                cursor.execute("""
+                    INSERT INTO file_reads (user_id, file_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (user_id, file_id) DO NOTHING
+                """, (user_id, f['file_id']))
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+    except Exception:
+        app.logger.exception("member_files error")
+        flash("Sorry, files failed to load.", "danger")
+        return redirect(url_for('member_home'))
 
     return render_template('member_files.html', files=files)
-
 
 #========== EVENTS ======================#
 
@@ -1024,70 +1017,72 @@ def member_files():
 
 @app.route('/admin/events', methods=['GET', 'POST'])
 def admin_events():
-    if session.get('role') != 'admin':
+    if norm_role(session.get('role')) != 'admin':
         return redirect(url_for('login'))
 
-    cursor, conn = getCursor(dictionary=True)
     admin_id = session.get('user_id')
+    if not admin_id:
+        flash("Session expired. Please login again.", "danger")
+        return redirect(url_for("login"))
 
     try:
-        if request.method == 'POST':
-            title = request.form.get('title', '').strip()
-            description = request.form.get('description', '').strip()
+        with db_cursor(dictionary=True) as (cursor, conn):
 
-            event_date = request.form.get('event_date', '').strip()      # YYYY-MM-DD
-            start_time = request.form.get('start_time', '').strip()      # HH:MM
-            end_time = request.form.get('end_time', '').strip()          # HH:MM or ""
-            location = request.form.get('location', '').strip()
+            if request.method == 'POST':
+                title = request.form.get('title', '').strip()
+                description = request.form.get('description', '').strip()
 
-            audience = request.form.get('audience', 'members')  # members/admin
-            is_admin_only = True if audience == 'admin' else False
-            is_pinned = True if request.form.get('is_pinned') else False
+                event_date = request.form.get('event_date', '').strip()
+                start_time = request.form.get('start_time', '').strip()
+                end_time = request.form.get('end_time', '').strip()
+                location = request.form.get('location', '').strip()
 
-            if not title or not event_date or not start_time:
-                flash('Please fill in Title, Date, and Start time.', 'error')
+                audience = request.form.get('audience', 'members')
+                is_admin_only = True if audience == 'admin' else False
+                is_pinned = True if request.form.get('is_pinned') else False
+
+                if not title or not event_date or not start_time:
+                    flash('Please fill in Title, Date, and Start time.', 'error')
+                    return redirect(url_for('admin_events'))
+
+                if end_time == '':
+                    end_time = None
+
+                if is_pinned:
+                    cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
+
+                cursor.execute("""
+                    INSERT INTO events (
+                        title, description, event_date, start_time, end_time,
+                        location, is_pinned, is_admin_only, created_by
+                    )
+                    VALUES (
+                        %s, %s, %s::date, %s::time, %s::time,
+                        %s, %s, %s, %s
+                    )
+                """, (
+                    title, description, event_date, start_time, end_time,
+                    location, is_pinned, is_admin_only, admin_id
+                ))
+
+                flash('Event created.', 'success')
                 return redirect(url_for('admin_events'))
 
-            # IMPORTANT: make empty end_time become NULL (not text '')
-            if end_time == '':
-                end_time = None
-
-            # Only one pinned event at a time
-            if is_pinned:
-                cursor.execute("UPDATE events SET is_pinned = FALSE WHERE is_pinned = TRUE")
-
             cursor.execute("""
-                INSERT INTO events (
-                    title, description, event_date, start_time, end_time,
-                    location, is_pinned, is_admin_only, created_by
-                )
-                VALUES (
-                    %s, %s, %s::date, %s::time, %s::time,
-                    %s, %s, %s, %s
-                )
-            """, (
-                title, description, event_date, start_time, end_time,
-                location, is_pinned, is_admin_only, admin_id
-            ))
+                SELECT e.*, u.username AS created_by_name
+                FROM events e
+                LEFT JOIN users u ON u.user_id = e.created_by
+                ORDER BY e.is_pinned DESC, e.event_date DESC, e.start_time DESC
+            """)
+            events = cursor.fetchall()
 
-            conn.commit()
-            flash('Event created.', 'success')
-            return redirect(url_for('admin_events'))
+    except Exception:
+        app.logger.exception("admin_events error")
+        flash("Event failed to save. Check Railway logs for the exact DB error.", "danger")
+        return redirect(url_for('admin_events'))
 
-        # GET list
-        cursor.execute("""
-            SELECT e.*, u.username AS created_by_name
-            FROM events e
-            LEFT JOIN users u ON u.user_id = e.created_by
-            ORDER BY e.is_pinned DESC, e.event_date DESC, e.start_time DESC
-        """)
-        events = cursor.fetchall()
+    return render_template('admin_events.html', events=events)
 
-        return render_template('admin_events.html', events=events)
-
-    finally:
-        cursor.close()
-        conn.close()
         
 #=========change audience/admin + save to calendar + edit/delete ========#   
     
@@ -1565,7 +1560,7 @@ def health():
   
     #==================== temporary route =======#
   
-#   @app.route("/debug/db")
+# @app.route("/debug/db")
 # def debug_db():
 #     cursor, conn = getCursor(dictionary=True)
 #     cursor.execute("SELECT current_database() AS db, inet_server_addr() AS host, inet_server_port() AS port;")
