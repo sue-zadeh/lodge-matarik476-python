@@ -475,6 +475,7 @@ def edit_profile():
         last_name = request.form.get('last_name', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
+        address = request.form.get('address', '').strip()
         birth_date = request.form.get('birth_date', None)
 
         # --- check duplicates (other users) ---

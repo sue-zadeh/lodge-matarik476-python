@@ -78,6 +78,12 @@
             <strong>Phone:</strong> {{ user.phone }}
           </p>
           {% endif %}
+          {% if user.address %}
+          <p class="mb-2">
+            <i class="fas fa-address me-2 text-warning"></i>
+            <strong>Address:</strong> {{ user.address }}
+          </p>
+          {% endif %}
           {% if user.birth_date %}
           <p class="mb-2">
             <i class="fas fa-birthday-cake me-2 text-warning"></i>
