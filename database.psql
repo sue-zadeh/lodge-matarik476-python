@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS files (
   subject VARCHAR(255) NOT NULL,
   description TEXT,
   filename VARCHAR(255) NOT NULL,
-  file_path VARCHAR(500) NOT NULL,
   is_admin_only BOOLEAN NOT NULL DEFAULT FALSE,
   uploaded_by INT NOT NULL REFERENCES users(user_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

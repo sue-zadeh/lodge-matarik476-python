@@ -737,7 +737,7 @@ def admin_manage_users():
 
 
 # ---------------------------------------------------------
-# Change role (admin <-> member)
+# ========== Change role (admin <-> member)
 # ---------------------------------------------------------
 
 @app.route('/admin/users/<int:user_id>/change_role', methods=['POST'])
@@ -774,7 +774,7 @@ def admin_change_role(user_id):
 
 
 # ---------------------------------------------------------
-# Toggle active / inactive
+#============= Toggle active / inactive
 # ---------------------------------------------------------
 
 @app.route('/admin/users/<int:user_id>/toggle_active', methods=['POST'])
@@ -806,7 +806,7 @@ def admin_toggle_active(user_id):
 
 
 # ---------------------------------------------------------
-# Delete user
+#========== # Delete user
 # ---------------------------------------------------------
 
 @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
@@ -834,7 +834,7 @@ def admin_delete_user(user_id):
     return redirect(url_for('admin_manage_users'))
   
   
-  
+ # ======================================# 
 # ---------- Admin files page ---------- #
 
 
@@ -892,7 +892,7 @@ def admin_files():
                 message = "File updated successfully."
             else:  # CREATE
                 cursor.execute("""
-                    INSERT INTO files (subject, description, filename, uploader_id, is_admin_only)
+                    INSERT INTO files (subject, description, filename, uploaded_by, is_admin_only)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (subject, description, filename_on_disk, session['user_id'], is_admin_only))
                 message = "File uploaded successfully."
@@ -904,13 +904,13 @@ def admin_files():
             app.logger.exception("File save error")
             flash("Failed to save file. Check logs.", 'danger')
 
-    # GET: list files
+    # GET: SELECT list files
     try:
         cursor.execute("""
             SELECT f.file_id, f.subject, f.description, f.filename, f.created_at,
                    f.is_admin_only, u.username AS uploader
             FROM files f
-            JOIN users u ON f.uploader_id = u.user_id
+            JOIN users u ON f.uploaded_by = u.user_id
             ORDER BY f.created_at DESC
         """)
         files = cursor.fetchall()
@@ -992,7 +992,7 @@ def member_files():
                        f.created_at,
                        u.username AS uploader
                 FROM files f
-                JOIN users u ON f.uploader_id = u.user_id
+                JOIN users u ON f.uploaded_by = u.user_id
                 WHERE f.is_admin_only = FALSE
                 ORDER BY f.created_at DESC
             """)
