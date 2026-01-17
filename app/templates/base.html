@@ -367,7 +367,7 @@
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'admin_files' %}active{% endif %} " href="{{ url_for('admin_files') }}">Files</a>
     </li>
-    <li class="nav-item dropdown">
+   <!-- <li class="nav-item dropdown">
       <a class="nav-link dropdown-toggle {% if request.endpoint == 'admin' %}active{% endif %}" href="#" data-bs-toggle="dropdown">
         Admin
       </a>
@@ -379,7 +379,7 @@
         <li><a class="dropdown-item" href="#">Upload File</a></li>
 
       </ul>
-    </li>
+    </li>-->
 
         <li class="nav-item ms-3">
         <a class="btn btn-outline-warning" href="{{ url_for('logout') }}">Logout</a>
