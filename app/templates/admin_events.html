@@ -177,7 +177,7 @@
 
         <div class="col-md-4">
           <label class="form-label text-light">Start Time *</label>
-          <input type="time" name="start_time" class="form-control bg-dark text-light border-secondary"
+          <input type="time" name="start_time" min="{{ date.today().isoformat() }}" class="form-control bg-dark text-light border-secondary"
                  value="{{ e.start_time }}" required>
         </div>
 
