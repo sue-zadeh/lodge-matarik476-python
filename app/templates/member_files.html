@@ -9,6 +9,15 @@
       overflow-wrap: break-word !important;
       max-width: 250px; 
   }
+
+  .table-dark th,
+  .table-dark td {
+    background-color: #212529 !important; /* very dark */
+    color: #f8f9fa !important; /* light text */
+  }
+  .table-dark .btn {
+    color: white !important;
+  }
 </style>
 
 <div class="container py-4">
@@ -18,13 +27,13 @@
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-dark table-striped table-hover align-middle mb-0">
-          <thead>
+          <thead class="bg-dark text-light">
             <tr>
-              <th>Subject</th>
-              <th>description</th>
-              <th>Sent on</th>
-              <th>From</th>
-              <th class="text-end">File</th>
+              <th class="bg-dark text-light" >Subject</th>
+              <th class="bg-dark text-light" >description</th>
+              <th class="bg-dark text-light" >Sent on</th>
+              <th class="bg-dark text-light" >From</th>
+              <th class="bg-dark text-light" >File</th>
             </tr>
           </thead>
           <tbody>
