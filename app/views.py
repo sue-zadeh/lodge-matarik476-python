@@ -1083,7 +1083,6 @@ def admin_events():
         return redirect(url_for('admin_events'))
 
     return render_template('admin_events.html', events=events, today=date.today().isoformat())
-)
 
         
 #=========change audience/admin + save to calendar + edit/delete ========#   
