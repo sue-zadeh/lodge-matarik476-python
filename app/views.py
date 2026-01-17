@@ -500,6 +500,12 @@ def edit_profile():
             cursor.close()
             conn.close()
             return redirect(url_for('edit_profile'))
+            if not address:
+                flash('Address is required.', 'error')
+                cursor.close()
+                conn.close()
+                return redirect(url_for('edit_profile'))
+
 
         # --- handle optional profile image (if you have this in your form) ---
         file = request.files.get('profile_image')
@@ -524,12 +530,13 @@ def edit_profile():
                 last_name  = %s,
                 email      = %s,
                 phone      = %s,
+                address    = %s,
                 birth_date = %s,
                 profile_image = COALESCE(%s, profile_image)
             WHERE user_id = %s
             """,
             (username, first_name, last_name,
-             email, phone, birth_date, profile_image, user_id)
+             email, phone, address, birth_date, profile_image, user_id)
         )
 
         conn.commit()
@@ -688,6 +695,7 @@ def admin_manage_users():
                 last_name,
                 email,
                 phone,
+                address,
                 birth_date,
                 profile_image,
                 role,
@@ -1074,7 +1082,8 @@ def admin_events():
         flash("Event failed to save. Check Railway logs for the exact DB error.", "danger")
         return redirect(url_for('admin_events'))
 
-    return render_template('admin_events.html', events=events)
+    return render_template('admin_events.html', events=events, today=date.today().isoformat())
+)
 
         
 #=========change audience/admin + save to calendar + edit/delete ========#   
@@ -1241,12 +1250,11 @@ def admin_pin_event(event_id):
  #---- get “active event for member home” ---#
  
 def get_active_event(cursor):
-    # pinned upcoming event for MEMBERS (not admin-only)
     cursor.execute("""
         SELECT *
         FROM events
         WHERE is_pinned = TRUE
-          AND is_admin_only = FALSE
+          AND COALESCE(is_admin_only, FALSE) = FALSE
           AND (event_date > CURRENT_DATE OR event_date = CURRENT_DATE)
         ORDER BY event_date ASC, start_time ASC
         LIMIT 1
@@ -1255,11 +1263,10 @@ def get_active_event(cursor):
     if pinned:
         return pinned
 
-    # next upcoming MEMBERS event
     cursor.execute("""
         SELECT *
         FROM events
-        WHERE is_admin_only = FALSE
+        WHERE COALESCE(is_admin_only, FALSE) = FALSE
           AND (
                event_date > CURRENT_DATE
                OR (event_date = CURRENT_DATE AND start_time >= CURRENT_TIME)

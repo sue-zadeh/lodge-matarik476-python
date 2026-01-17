@@ -80,6 +80,10 @@
             <p class="mb-1">
               <strong>Phone:</strong> {{ user.phone }}
             </p>
+            {% if user.address %}
+            <p class="mb-1">
+              <strong>Address:</strong> {{ user.address}}
+            </p>
             {% endif %}
             {% if user.birth_date %}
             <p class="mb-1">
