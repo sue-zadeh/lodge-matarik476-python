@@ -838,27 +838,28 @@ def admin_files():
     edit_id = request.args.get('edit_id', type=int)
     cursor, conn = getCursor(dictionary=True)
 
+    message = None
+
     if request.method == 'POST':
-        file_id = request.form.get('file_id')  # empty when creating
+        file_id = request.form.get('file_id')
         subject = request.form.get('subject', '').strip()
         description = request.form.get('description', '').strip()
-        is_admin_only = True if request.form.get('is_admin_only') else False
-        upload = request.files.get('file')
+        is_admin_only = 'is_admin_only' in request.form
 
         if not subject:
             flash('Subject is required.', 'error')
             cursor.close(); conn.close()
             return redirect(url_for('admin_files'))
 
-        # require a file only for create
-        if not file_id and (not upload or upload.filename == ''):
+        filename_on_disk = None
+        upload = request.files.get('file')
+
+        # Only require file when creating new (not editing)
+        if not file_id and (not upload or not upload.filename):
             flash('Please choose a file to upload.', 'error')
             cursor.close(); conn.close()
             return redirect(url_for('admin_files'))
 
-        filename_on_disk = None
-
-        # if user uploaded a new file, save it
         if upload and upload.filename:
             if not allowed_file_generic(upload.filename):
                 flash('File type not allowed.', 'error')
@@ -870,67 +871,58 @@ def admin_files():
             filename_on_disk = f"{timestamp}_{safe_name}"
             upload.save(os.path.join(app.config['FILE_UPLOAD_FOLDER'], filename_on_disk))
 
-        # UPDATE
-        if file_id:
-            cursor.execute(
-                """
-                UPDATE files
-                SET subject = %s,
-                    description = %s,
-                    is_admin_only = %s,
-                    filename = COALESCE(%s, filename)
-                WHERE file_id = %s
-                """,
-                (subject, description, is_admin_only, filename_on_disk, file_id)
-            )
-            flash('File updated successfully.', 'success')
+        try:
+            if file_id:  # UPDATE
+                cursor.execute("""
+                    UPDATE files
+                    SET subject = %s,
+                        description = %s,
+                        is_admin_only = %s,
+                        filename = COALESCE(%s, filename)
+                    WHERE file_id = %s
+                """, (subject, description, is_admin_only, filename_on_disk, file_id))
+                message = "File updated successfully."
+            else:  # CREATE
+                cursor.execute("""
+                    INSERT INTO files (subject, description, filename, uploader_id, is_admin_only)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (subject, description, filename_on_disk, session['user_id'], is_admin_only))
+                message = "File uploaded successfully."
 
-        # CREATE
-        else:
-            cursor.execute(
-                """
-                INSERT INTO files (subject, description, filename, uploader_id, is_admin_only)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (subject, description, filename_on_disk, session['user_id'], is_admin_only)
-            )
-            flash('File uploaded successfully.', 'success')
+            conn.commit()
+            flash(message, 'success')
+        except Exception as e:
+            conn.rollback()
+            app.logger.exception("File save error")
+            flash("Failed to save file. Check logs.", 'danger')
 
-        conn.commit()
-        cursor.close(); conn.close()
-        return redirect(url_for('admin_files'))
+    # GET: list files
+    try:
+        cursor.execute("""
+            SELECT f.file_id, f.subject, f.description, f.filename, f.created_at,
+                   f.is_admin_only, u.username AS uploader
+            FROM files f
+            JOIN users u ON f.uploader_id = u.user_id
+            ORDER BY f.created_at DESC
+        """)
+        files = cursor.fetchall()
 
-    # GET: list
-    cursor.execute(
-        """
-        SELECT f.file_id,
-               f.subject,
-               f.description,
-               f.filename,
-               f.created_at,
-               f.is_admin_only,
-               u.username AS uploader
-        FROM files f
-        JOIN users u ON f.uploader_id = u.user_id
-        ORDER BY f.created_at DESC
-        """
-    )
-    files = cursor.fetchall()
+        file_to_edit = None
+        if edit_id:
+            cursor.execute("""
+                SELECT file_id, subject, description, filename, created_at, is_admin_only
+                FROM files WHERE file_id = %s
+            """, (edit_id,))
+            file_to_edit = cursor.fetchone()
+    except Exception as e:
+        app.logger.exception("Files list error")
+        flash("Failed to load files list.", 'danger')
+        files = []
 
-    file_to_edit = None
-    if edit_id:
-        cursor.execute(
-            """
-            SELECT file_id, subject, description, filename, created_at, is_admin_only
-            FROM files
-            WHERE file_id = %s
-            """,
-            (edit_id,)
-        )
-        file_to_edit = cursor.fetchone()
+    cursor.close()
+    conn.close()
 
-    cursor.close(); conn.close()
-    return render_template('admin_files.html', files=files, file_to_edit=file_to_edit)
+    return render_template('admin_files.html', files=files, file_to_edit=file_to_edit)  
   
   #=====================================#
   
