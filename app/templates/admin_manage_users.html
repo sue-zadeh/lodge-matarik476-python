@@ -76,19 +76,24 @@
             <p class="mb-1">
               <strong>Email:</strong> {{ user.email }}
             </p>
-            {% if user.phone %}
-            <p class="mb-1">
-              <strong>Phone:</strong> {{ user.phone }}
-            </p>
-            {% if user.address %}
-            <p class="mb-1">
-              <strong>Address:</strong> {{ user.address}}
-            </p>
-            {% if user.birth_date %}
-            <p class="mb-1">
-              <strong>DOB:</strong> {{ user.birth_date }}
-            </p>
-            {% endif %}
+            <!-- Phone, Address, DOB – properly nested -->
+{% if user.phone %}
+  <p class="mb-1">
+    <strong>Phone:</strong> {{ user.phone }}
+  </p>
+{% endif %}
+
+{% if user.address %}
+  <p class="mb-1">
+    <strong>Address:</strong> {{ user.address }}
+  </p>
+{% endif %}
+
+{% if user.birth_date %}
+  <p class="mb-1">
+    <strong>DOB:</strong> {{ user.birth_date }}
+  </p>
+{% endif %}
 
             <p class="mb-2">
               <strong>Status:</strong>
