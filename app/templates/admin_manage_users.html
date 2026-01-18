@@ -24,16 +24,12 @@
   {% endwith %}
 
   <!-- Search form -->
-  <form action="{{ url_for('admin_manage_users') }}" method="get" class="mb-4" data-aos="fade-down-left">
-    <div class="input-group">
-      <input type="text"
-             name="search"
-             class="form-control"
-             placeholder="Search by first name, last name, username, or email"
-             value="{{ search_term or '' }}">
-      <button class="btn btn-warning" type="submit">Search</button>
-    </div>
-  </form>
+  <form method="GET" action="{{ url_for('admin_manage_users') }}" class="d-flex gap-2">
+  <input class="form-control" type="text" name="search" value="{{ search_term }}"
+         placeholder="Search by first name, last name, username, or email">
+  <button class="btn btn-warning" type="submit">Search</button>
+</form>
+
 
   {% if message %}
     <p class="text-center text-warning">{{ message }}</p>

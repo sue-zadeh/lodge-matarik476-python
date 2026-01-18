@@ -670,45 +670,33 @@ def admin_whats_next():
 
 @app.route('/admin/users', methods=['GET', 'POST'])
 def admin_manage_users():
-    # only admins can see this page
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
-    search_term = ""
+    # ✅ works for GET (?search=...) and POST (form submit)
+    search_term = (request.args.get('search') or request.form.get('search') or "").strip()
+
     users = []
     message = ""
 
     cursor, conn = getCursor(dictionary=True)
-
     try:
-        if request.method == 'POST':
-            search_term = request.form.get('search', '').strip()
-
         base_sql = """
             SELECT
-                user_id,
-                username,
-                first_name,
-                last_name,
-                email,
-                phone,
-                address,
-                birth_date,
-                profile_image,
-                role,
-                is_active
+                user_id, username, first_name, last_name,
+                email, phone, address, birth_date,
+                profile_image, role, is_active
             FROM users
         """
-
         params = []
 
         if search_term:
             base_sql += """
                 WHERE
-                    first_name ILIKE %s
-                    OR last_name ILIKE %s
-                    OR username ILIKE %s
-                    OR email ILIKE %s
+                    COALESCE(first_name,'') ILIKE %s
+                    OR COALESCE(last_name,'') ILIKE %s
+                    OR COALESCE(username,'') ILIKE %s
+                    OR COALESCE(email,'') ILIKE %s
             """
             like = f"%{search_term}%"
             params = [like, like, like, like]
@@ -731,7 +719,6 @@ def admin_manage_users():
         search_term=search_term,
         message=message
     )
-
 
 # ---------------------------------------------------------
 # ========== Change role (admin <-> member)
