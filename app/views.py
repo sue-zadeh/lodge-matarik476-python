@@ -475,19 +475,19 @@ def edit_profile():
             email = request.form.get('email', '').strip()
             phone = request.form.get('phone', '').strip()
             address = request.form.get('address', '').strip()
-
-            # Handle birth_date safely
             birth_date_raw = request.form.get('birth_date', '').strip()
+
+            # Convert empty to None
             birth_date = None
             if birth_date_raw:
                 try:
-                    datetime.strptime(birth_date_raw, '%Y-%m-%d')  # validate
+                    datetime.strptime(birth_date_raw, '%Y-%m-%d')
                     birth_date = birth_date_raw
                 except ValueError:
                     flash('Invalid date format. Use YYYY-MM-DD', 'error')
                     return redirect(url_for('edit_profile'))
 
-            # Check duplicates
+            # Duplicates check
             cursor.execute("""
                 SELECT user_id, username, email
                 FROM users
@@ -498,12 +498,12 @@ def edit_profile():
 
             if existing:
                 if existing['username'] == username:
-                    flash('Username already exists. Please choose another one.', 'error')
+                    flash('Username already exists.', 'error')
                 elif existing['email'] == email:
-                    flash('Email already registered. Please use a different email.', 'error')
+                    flash('Email already registered.', 'error')
                 return redirect(url_for('edit_profile'))
 
-            # Profile image
+            # Image
             profile_image = None
             file = request.files.get('profile_image')
             if file and file.filename:
@@ -512,7 +512,7 @@ def edit_profile():
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     profile_image = filename
                 else:
-                    flash('File type not allowed.', 'error')
+                    flash('File not allowed.', 'error')
                     return redirect(url_for('edit_profile'))
 
             # Update
@@ -532,25 +532,21 @@ def edit_profile():
 
             conn.commit()
             flash('Profile updated successfully.', 'success')
-            return redirect(url_for('profile'))  # ← Changed to redirect to /profile
+            return redirect(url_for('profile'))  # Back to profile to see changes
 
-        # GET: load user
+        # GET
         cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
 
     except Exception as e:
         conn.rollback()
         app.logger.exception("Edit profile error")
-        flash('Failed to update profile. Please try again.', 'danger')
+        flash('Failed to update profile.', 'danger')
     finally:
         cursor.close()
         conn.close()
 
-    if user:
-        return render_template('edit-profile.html', user=user)
-    else:
-        flash('User not found.', 'danger')
-        return redirect(url_for('login'))
+    return render_template('edit-profile.html', user=user)
             
 #------- Change Picture in the Profile --------------------#
 @app.route('/update_profile_image', methods=['POST'])
