@@ -38,8 +38,8 @@
           </thead>
           <tbody>
           {% if files %}
-            {% for f in files %}
-              <tr>
+           {% for f in files %}
+<tr>
   <td class="description-cell">{{ f.subject }}</td>
   <td class="description-cell">{{ f.description }}</td>
   <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
@@ -52,7 +52,7 @@
     </a>
   </td>
 </tr>
-            {% endfor %}
+{% endfor %}
           {% else %}
             <tr>
               <td colspan="4" class="text-center py-4 text-muted">
