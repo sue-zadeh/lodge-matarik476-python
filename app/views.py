@@ -466,18 +466,30 @@ def edit_profile():
 
     user_id = session['user_id']
     cursor, conn = getCursor(dictionary=True)
+    user = None
 
     try:
-        if request.method == 'POST':
-            username = request.form.get('username', '').strip()
-            first_name = request.form.get('first_name', '').strip()
-            last_name = request.form.get('last_name', '').strip()
-            email = request.form.get('email', '').strip()
-            phone = request.form.get('phone', '').strip()
-            address = request.form.get('address', '').strip()
-            birth_date_raw = request.form.get('birth_date', '').strip()
+        # Always load user (so GET works + also safe if POST fails)
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
 
-            # Convert empty to None
+        if request.method == 'POST':
+            username = (request.form.get('username') or '').strip()
+
+            # accept both template name styles
+            first_name = (request.form.get('first_name') or request.form.get('fname') or '').strip()
+            last_name  = (request.form.get('last_name')  or request.form.get('lname')  or '').strip()
+
+            email = (request.form.get('email') or '').strip()
+
+            phone = (request.form.get('phone') or '').strip()
+            if phone.lower() == 'none':
+                phone = ''
+            phone = phone if phone else None
+
+            address = (request.form.get('address') or '').strip()
+
+            birth_date_raw = (request.form.get('birth_date') or '').strip()
             birth_date = None
             if birth_date_raw:
                 try:
@@ -487,7 +499,7 @@ def edit_profile():
                     flash('Invalid date format. Use YYYY-MM-DD', 'error')
                     return redirect(url_for('edit_profile'))
 
-            # Duplicates check
+            # duplicates check
             cursor.execute("""
                 SELECT user_id, username, email
                 FROM users
@@ -495,15 +507,11 @@ def edit_profile():
                   AND user_id <> %s
             """, (username, email, user_id))
             existing = cursor.fetchone()
-
             if existing:
-                if existing['username'] == username:
-                    flash('Username already exists.', 'error')
-                elif existing['email'] == email:
-                    flash('Email already registered.', 'error')
+                flash('Username or email already exists.', 'error')
                 return redirect(url_for('edit_profile'))
 
-            # Image
+            # image
             profile_image = None
             file = request.files.get('profile_image')
             if file and file.filename:
@@ -515,7 +523,6 @@ def edit_profile():
                     flash('File not allowed.', 'error')
                     return redirect(url_for('edit_profile'))
 
-            # Update
             cursor.execute("""
                 UPDATE users
                 SET username = %s,
@@ -527,21 +534,18 @@ def edit_profile():
                     birth_date = %s,
                     profile_image = COALESCE(%s, profile_image)
                 WHERE user_id = %s
-            """, (username, first_name, last_name, email, phone, address,
-                  birth_date, profile_image, user_id))
+            """, (username, first_name, last_name, email, phone, address, birth_date, profile_image, user_id))
 
             conn.commit()
             flash('Profile updated successfully.', 'success')
-            return redirect(url_for('profile'))  # Back to profile to see changes
+            return redirect(url_for('profile'))
 
-        # GET
-        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
-        user = cursor.fetchone()
-
-    except Exception as e:
+    except Exception:
         conn.rollback()
         app.logger.exception("Edit profile error")
         flash('Failed to update profile.', 'danger')
+        return redirect(url_for('edit_profile'))
+
     finally:
         cursor.close()
         conn.close()

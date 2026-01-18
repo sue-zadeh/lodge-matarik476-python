@@ -36,8 +36,9 @@
     </div>
 <div class="mb-3">
   <label for="phone" class="form-label" data-aos="fade-down-right">Phone</label>
-  <input type="text" class="form-control" id="phone"
-         name="phone" value="{{ user['phone'] }}">
+  <input type="text" name="phone" id="phone" class="form-control"
+  value="{{ user.phone or '' }}">
+
 </div>
 <div class="mb-3">
   <label class="form-label" data-aos="fade-down-right">Address</label>
@@ -46,8 +47,9 @@
 
     <div class="mb-3">
       <label for="birth_date" class="form-label" data-aos="fade-left">Date of Birth</label>
-      <input type="date" class="form-control" id="birth_date"
-             name="birth_date" value="{{ user['birth_date'] }}">
+      <input type="date" name="birth_date" id="birth_date" class="form-control"
+  value="{{ user.birth_date.isoformat() if user.birth_date else '' }}">
+
     </div>
 
     <div class="mb-3">
