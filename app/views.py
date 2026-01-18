@@ -461,115 +461,106 @@ def profile():
 # ---- Edit Profile ---- #
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
-    # must be logged in
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     user_id = session['user_id']
-
     cursor, conn = getCursor(dictionary=True)
 
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        first_name = request.form.get('first_name', '').strip()
-        last_name = request.form.get('last_name', '').strip()
-        email = request.form.get('email', '').strip()
-        phone = request.form.get('phone', '').strip()
-        address = request.form.get('address', '').strip()
-        birth_date = request.form.get('birth_date', None)
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username', '').strip()
+            first_name = request.form.get('first_name', '').strip()
+            last_name = request.form.get('last_name', '').strip()
+            email = request.form.get('email', '').strip()
+            phone = request.form.get('phone', '').strip()
+            address = request.form.get('address', '').strip()
+            birth_date_raw = request.form.get('birth_date', '').strip()
 
-        # --- check duplicates (other users) ---
-        cursor.execute(
-            """
-            SELECT user_id, username, email
-            FROM users
-            WHERE (username = %s OR email = %s)
-              AND user_id <> %s
-            """,
-            (username, email, user_id)
-        )
-        existing = cursor.fetchone()
-        
-        # Convert empty to None (NULL in DB), else validate
-        birth_date = None
-        if birth_date_raw:
-           try:
-              birth_date_obj = datetime.strptime(birth_date_raw, '%Y-%m-%d')
-              birth_date = birth_date_raw  # keep as string for DB
-           except ValueError:
-              flash('Invalid date format. Use YYYY-MM-DD', 'error')
-              cursor.close()
-              conn.close()
-              return redirect(url_for('edit_profile'))
+            # Convert empty birth_date to None (NULL in DB)
+            birth_date = None
+            if birth_date_raw:
+                try:
+                    datetime.strptime(birth_date_raw, '%Y-%m-%d')  # validate format
+                    birth_date = birth_date_raw
+                except ValueError:
+                    flash('Invalid date format. Use YYYY-MM-DD', 'error')
+                    return redirect(url_for('edit_profile'))
 
-        if existing:
-            # someone else already has this username/email
-            if existing['username'] == username:
-                flash('Username already exists. Please choose another one.', 'error')
-            elif existing['email'] == email:
-                flash('Email already registered. Please use a different email.', 'error')
+            # Check duplicates
+            cursor.execute("""
+                SELECT user_id, username, email
+                FROM users
+                WHERE (username = %s OR email = %s)
+                  AND user_id <> %s
+            """, (username, email, user_id))
+            existing = cursor.fetchone()
 
-            cursor.close()
-            conn.close()
-            return redirect(url_for('edit_profile'))
-            if not address:
-                flash('Address is required.', 'error')
-                cursor.close()
-                conn.close()
-                return redirect(url_for('edit_profile'))
-            if not birth_date:
-                flash('Birth date is required.', 'error')
-                cursor.close()
-                conn.close()
+            if existing:
+                if existing['username'] == username:
+                    flash('Username already exists. Please choose another one.', 'error')
+                elif existing['email'] == email:
+                    flash('Email already registered. Please use a different email.', 'error')
                 return redirect(url_for('edit_profile'))
 
-        # --- handle optional profile image (if you have this in your form) ---
-        file = request.files.get('profile_image')
-        profile_image = None
-        if file and file.filename:
-            if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                profile_image = filename
-            else:
-                flash('File not allowed.', 'error')
-                cursor.close()
-                conn.close()
-                return redirect(url_for('edit_profile'))
+            # Optional validations (uncomment if you want them required)
+            # if not address:
+            #     flash('Address is required.', 'error')
+            #     return redirect(url_for('edit_profile'))
+            # if not birth_date:
+            #     flash('Birth date is required.', 'error')
+            #     return redirect(url_for('edit_profile'))
 
-        # --- finally update the record ---
-        cursor.execute(
-            """
-            UPDATE users
-            SET username = %s,
-                first_name = %s,
-                last_name  = %s,
-                email      = %s,
-                phone      = %s,
-                address    = %s,
-                birth_date = %s,
-                profile_image = COALESCE(%s, profile_image)
-            WHERE user_id = %s
-            """,
-            (username, first_name, last_name,
-             email, phone, address, birth_date, profile_image, user_id)
-        )
+            # Handle profile image
+            profile_image = None
+            file = request.files.get('profile_image')
+            if file and file.filename:
+                if allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    profile_image = filename
+                else:
+                    flash('File type not allowed.', 'error')
+                    return redirect(url_for('edit_profile'))
 
-        conn.commit()
+            # Update record
+            cursor.execute("""
+                UPDATE users
+                SET username = %s,
+                    first_name = %s,
+                    last_name  = %s,
+                    email      = %s,
+                    phone      = %s,
+                    address    = %s,
+                    birth_date = %s,
+                    profile_image = COALESCE(%s, profile_image)
+                WHERE user_id = %s
+            """, (username, first_name, last_name, email, phone, address,
+                  birth_date, profile_image, user_id))
+
+            conn.commit()
+            flash('Profile updated successfully.', 'success')
+            return redirect(url_for('member_home'))  # or 'profile' / 'admin_home'
+
+        # GET: load user data
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+
+    except Exception as e:
+        conn.rollback()
+        app.logger.exception("Edit profile error")
+        flash('Failed to update profile. Please try again.', 'danger')
+    finally:
         cursor.close()
         conn.close()
 
-        flash('Profile updated successfully.', 'success')
-        return redirect(url_for('member_home'))  # or wherever you send them
-
-    # GET: load current user data
-    cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
-    user = cursor.fetchone()
-    cursor.close()
-    conn.close()
-
-    return render_template('edit-profile.html', user=user)
-
+    if user:
+        return render_template('edit-profile.html', user=user)
+    else:
+        flash('User not found.', 'danger')
+        return redirect(url_for('login'))
+      
+      
 #------- Change Picture in the Profile --------------------#
 @app.route('/update_profile_image', methods=['POST'])
 def update_profile_image():
