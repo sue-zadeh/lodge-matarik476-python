@@ -475,13 +475,13 @@ def edit_profile():
             email = request.form.get('email', '').strip()
             phone = request.form.get('phone', '').strip()
             address = request.form.get('address', '').strip()
-            birth_date_raw = request.form.get('birth_date', '').strip()
 
-            # Convert empty birth_date to None (NULL in DB)
+            # Handle birth_date safely
+            birth_date_raw = request.form.get('birth_date', '').strip()
             birth_date = None
             if birth_date_raw:
                 try:
-                    datetime.strptime(birth_date_raw, '%Y-%m-%d')  # validate format
+                    datetime.strptime(birth_date_raw, '%Y-%m-%d')  # validate
                     birth_date = birth_date_raw
                 except ValueError:
                     flash('Invalid date format. Use YYYY-MM-DD', 'error')
@@ -503,15 +503,7 @@ def edit_profile():
                     flash('Email already registered. Please use a different email.', 'error')
                 return redirect(url_for('edit_profile'))
 
-            # Optional validations (uncomment if you want them required)
-            # if not address:
-            #     flash('Address is required.', 'error')
-            #     return redirect(url_for('edit_profile'))
-            # if not birth_date:
-            #     flash('Birth date is required.', 'error')
-            #     return redirect(url_for('edit_profile'))
-
-            # Handle profile image
+            # Profile image
             profile_image = None
             file = request.files.get('profile_image')
             if file and file.filename:
@@ -523,7 +515,7 @@ def edit_profile():
                     flash('File type not allowed.', 'error')
                     return redirect(url_for('edit_profile'))
 
-            # Update record
+            # Update
             cursor.execute("""
                 UPDATE users
                 SET username = %s,
@@ -540,9 +532,9 @@ def edit_profile():
 
             conn.commit()
             flash('Profile updated successfully.', 'success')
-            return redirect(url_for('member_home'))  # or 'profile' / 'admin_home'
+            return redirect(url_for('profile'))  # ← Changed to redirect to /profile
 
-        # GET: load user data
+        # GET: load user
         cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
         user = cursor.fetchone()
 
@@ -559,8 +551,7 @@ def edit_profile():
     else:
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
-      
-      
+            
 #------- Change Picture in the Profile --------------------#
 @app.route('/update_profile_image', methods=['POST'])
 def update_profile_image():

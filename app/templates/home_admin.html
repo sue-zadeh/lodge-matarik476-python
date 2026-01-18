@@ -21,7 +21,7 @@
         <div>
           <p class="mb-1 text-muted small">Welcome back,</p>
           <h6 class="mb-1 text-light">
-            Welcome {{ user.first_name if user else '' }} {{ user.last_name if user else '' }}
+            Welcome {{ user.first_name if user or 'Member' }} {{ user.last_name if user or '' }}
           </h6>
           <span class="badge bg-warning text-dark">Admin</span>
         </div>
