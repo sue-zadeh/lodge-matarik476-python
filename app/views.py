@@ -489,6 +489,18 @@ def edit_profile():
             (username, email, user_id)
         )
         existing = cursor.fetchone()
+        
+        # Convert empty to None (NULL in DB), else validate
+        birth_date = None
+        if birth_date_raw:
+           try:
+              birth_date_obj = datetime.strptime(birth_date_raw, '%Y-%m-%d')
+              birth_date = birth_date_raw  # keep as string for DB
+           except ValueError:
+              flash('Invalid date format. Use YYYY-MM-DD', 'error')
+              cursor.close()
+              conn.close()
+              return redirect(url_for('edit_profile'))
 
         if existing:
             # someone else already has this username/email
@@ -902,6 +914,7 @@ def admin_files():
 
             conn.commit()
             flash(message, 'success')
+            return redirect(url_for('admin_files'))
         except Exception as e:
             conn.rollback()
             app.logger.exception("File save error")
