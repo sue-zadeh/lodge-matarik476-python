@@ -46,7 +46,7 @@
                 <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
                 <td>{{ f.uploader }}</td>
                 <td class="text-end">
-                  <a href="{{ url_for('static', filename='files/' ~ f.filename) }}"
+                  <a href="{{ url_for('download_file', filename=file.filename) }}"
                      class="btn btn-sm btn-outline-light"
                      target="_blank">
                     <i class="fas fa-download"></i> Open

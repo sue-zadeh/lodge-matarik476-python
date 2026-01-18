@@ -505,7 +505,11 @@ def edit_profile():
                 cursor.close()
                 conn.close()
                 return redirect(url_for('edit_profile'))
-
+            if not birth_date:
+                flash('Birth date is required.', 'error')
+                cursor.close()
+                conn.close()
+                return redirect(url_for('edit_profile'))
 
         # --- handle optional profile image (if you have this in your form) ---
         file = request.files.get('profile_image')
@@ -553,7 +557,6 @@ def edit_profile():
     conn.close()
 
     return render_template('edit-profile.html', user=user)
-
 
 #------- Change Picture in the Profile --------------------#
 @app.route('/update_profile_image', methods=['POST'])
@@ -903,7 +906,7 @@ def admin_files():
             conn.rollback()
             app.logger.exception("File save error")
             flash("Failed to save file. Check logs.", 'danger')
-
+            return redirect(url_for('admin_files'))
     # GET: SELECT list files
     try:
         cursor.execute("""
@@ -956,6 +959,15 @@ def update_file_audience(file_id):
     flash('Audience updated.', 'success')
     return redirect(url_for('admin_files'))
 
+# Serve files securely (only for logged-in members/admins)
+@app.route('/files/<path:filename>')
+def download_file(filename):
+    if session.get('role') not in ['member', 'admin']:
+        flash('Please login to access files.', 'danger')
+        return redirect(url_for('login'))
+
+    # Serve from FILE_UPLOAD_FOLDER
+    return send_from_directory(app.config['FILE_UPLOAD_FOLDER'], filename, as_attachment=False)  # as_attachment=False to view in browser
 
 #------------ Delete file -----------#
 

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(40) CHECK (phone ~ '^[0-9+ ]*$'),
     address VARCHAR(255) NOT NULL,
-    birth_date DATE,
+    birth_date DATE NOT NULL,
     profile_image VARCHAR(255),
     role VARCHAR(20) NOT NULL DEFAULT 'member' CHECK (role IN ('member','admin')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
