@@ -43,7 +43,7 @@
   <td class="description-cell">{{ f.subject }}</td>
   <td class="description-cell">{{ f.description }}</td>
   <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
-  <td>{{ f.uploaded_by }}</td>
+  <td>{{ f.uploader }}</td>
   <td class="text-end">
     <a href="{{ url_for('download_file', filename=f.filename) }}"
        class="btn btn-sm btn-outline-light"
