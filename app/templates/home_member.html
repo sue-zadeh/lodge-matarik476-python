@@ -111,21 +111,21 @@
                {% else %}
                   {{ url_for('static', filename='img/logo1.jpg') }}
                {% endif %}"
-          alt="Member avatar"
+           alt="Member avatar"
           class="rounded-circle border border-warning me-3"
           style="width:72px;height:72px;object-fit:cover;"
         >
         <div>
-          <p class="mb-1 small text-secondary">Welcome back,</p>
+          <p class="mb-1 text-muted small">Welcome back,</p>
           <h6 class="mb-1 text-light">
-            Welcome {{ user.first_name }} {{ user.last_name }}
+            Welcome {{ user.first_name if user else '' }} {{ user.last_name if user else '' }}
           </h6>
-          <span class="badge bg-warning text-dark">
-            {{ user.role|capitalize }}
-          </span>
+          <span class="badge bg-warning text-dark">Member</span>
         </div>
       </div>
     </div>
+  </div>
+
 
     <!-- ANNOUNCEMENTS (RIGHT) -->
     <div class="col-md-6">
