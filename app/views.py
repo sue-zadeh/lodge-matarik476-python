@@ -125,6 +125,19 @@ def db_cursor(dictionary=False):
             conn.close()
         except Exception:
             pass
+#========================about us =============#
+
+@app.route('/about', methods=['GET'])
+def about():
+  return render_template("aboutus.html")
+#========================================
+
+@app.route('/our_story', methods=['GET'])
+def our_story():
+  return render_template("ourstory.html")
+
+
+
 
 # ------ register form ------- #
 

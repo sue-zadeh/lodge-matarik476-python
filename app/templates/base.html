@@ -307,10 +307,10 @@
       <a class="nav-link nav-link-underline {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}" href="#">About Us</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About Us</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="#">Our Story</a>
+      <a class="nav-link nav-link-underline {% if request.endpoint == 'our_story' %}active{% endif %}" href="{{ url_for('our_story') }}">Our Story</a>
     </li>
     <li class="nav-item">
       <a class="nav-link nav-link-underline {% if request.endpoint == 'contact' %}active{% endif %}"  href="{{ url_for('contact') }}">Contact Us</a>
