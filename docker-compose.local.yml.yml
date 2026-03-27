@@ -1,7 +1,6 @@
 version: "3.9"
-
 services:
-  web:
+ web:
     build: .
     ports:
       - "8000:8000"  
@@ -20,7 +19,7 @@ services:
     volumes:
       - .:/app
 
-  db:
+ db:
     image: postgres:16
     restart: always
     environment:
@@ -34,7 +33,6 @@ services:
 
 volumes:
   postgres_data:
-
+# publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
       # EMAIL_PASS: agetrjlkwjsestkr
-      # RESEND_API_KEY: re_Vd9LtqhL_6aFtQBBYffgM94KC9Yv4qaEF
 

@@ -144,6 +144,12 @@ ENV/
 env.bak/
 venv.bak/
 *.env
+.env
+venv/
+__pycache__/
+*.pyc
+*.PublishSettings
+docker-compose.local.yml
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -205,3 +211,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+.env
+venv/
+__pycache__/
+*.pyc
+*.PublishSettings
+docker-compose.local.yml
