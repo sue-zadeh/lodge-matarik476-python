@@ -10,8 +10,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN mkdir -p static/uploads static/files
+
+
 # Debug: show files during build
-RUN echo "Current directory contents after COPY:" && ls -la
+# RUN echo "Current directory contents after COPY:" && ls -la
 
 EXPOSE 8000
 

@@ -1,13 +1,18 @@
 # app/__init__.py
+import os
 from flask import Flask
 
 app = Flask(__name__)
 
-# config
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['FILE_UPLOAD_FOLDER'] = 'static/files'      
+app.secret_key =  os.environ.get("SECRET_KEY", "dev-secret-key")
 
-app.secret_key = '2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5'
+# config
+app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "static/uploads")
+app.config["FILE_UPLOAD_FOLDER"] = os.environ.get("FILE_UPLOAD_FOLDER", "static/files")
+
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+os.makedirs(app.config["FILE_UPLOAD_FOLDER"], exist_ok=True)
+
 
 # import routes so they register on the app
 from app import views

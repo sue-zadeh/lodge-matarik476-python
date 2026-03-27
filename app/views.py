@@ -10,10 +10,10 @@ from datetime import datetime, date
 from app import app
 from connect import get_db  # our PostgreSQL connection
 from datetime import timedelta
+from datetime import datetime
 from email.message import EmailMessage
 import smtplib
 from urllib.parse import urlencode
-import resend
 import pytz
 from contextlib import contextmanager
 
@@ -136,107 +136,108 @@ def about():
 def our_story():
   return render_template("ourstory.html")
 
-
-
-
 # ------ register form ------- #
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    form = {
+        'username': '',
+        'first_name': '',
+        'last_name': '',
+        'email': '',
+        'address': '',
+        'birth_date': '',
+        'phone': '',
+        'role': 'member'
+    }
+    errors = {}
+
     if request.method == 'POST':
-        username = request.form['username']
-        first_name = request.form['first_name']
-        last_name = request.form['last_name']
-        password = request.form['password']
-        confirm_password = request.form['confirm_password']
-        email = request.form['email']
-        address = request.form.get('address', '').strip()
-        birth_date = request.form['birth_date']
-        phone = request.form.get('phone', '')
+        form['username'] = request.form.get('username', '').strip()
+        form['first_name'] = request.form.get('first_name', '').strip()
+        form['last_name'] = request.form.get('last_name', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        form['email'] = request.form.get('email', '').strip()
+        form['address'] = request.form.get('address', '').strip()
+        form['birth_date'] = request.form.get('birth_date', '').strip()
+        form['phone'] = request.form.get('phone', '').strip()
 
-        # ---- role logic ----#
-        
-        # default
         role = 'member'
-
-        # only current admins can set role via form
         if session.get('role') == 'admin':
             role_from_form = request.form.get('role', 'member')
             if role_from_form in ['admin', 'member']:
                 role = role_from_form
+        form['role'] = role
 
-        file = request.files['profile_image']
+        file = request.files.get('profile_image')
         profile_image = None
 
-        # ---- basic validations ----
+        # ---- validations ----
         if password != confirm_password:
-            flash('Passwords do not match!', 'error')
-            return redirect(url_for('register'))
+            errors['confirm_password'] = 'Passwords do not match.'
 
-        if len(username) < 5:
-            flash('Username must be at least 5 characters long.', 'error')
-            return redirect(url_for('register'))
+        if len(form['username']) < 5:
+            errors['username'] = 'Username must be at least 5 characters long.'
 
-        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
-            flash('Invalid email format.', 'error')
-            return redirect(url_for('register'))
+        if not form['first_name']:
+            errors['first_name'] = 'First name is required.'
 
-        if phone and not re.match(r'^[0-9+ ]*$', phone):
-            flash('Phone must contain digits and + only.', 'error')
-            return redirect(url_for('register'))
+        if not form['last_name']:
+            errors['last_name'] = 'Last name is required.'
+
+        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', form['email']):
+            errors['email'] = 'Invalid email format.'
+
+        if form['phone'] and not re.match(r'^[0-9+ ]*$', form['phone']):
+            errors['phone'] = 'Phone must contain digits and + only.'
 
         if (len(password) < 8 or
             not re.search(r'[A-Z]', password) or
             not re.search(r'[a-z]', password) or
             not re.search(r'[0-9]', password)):
-            flash('Password must be at least 8 characters and include upper, lower and number.', 'error')
-            return redirect(url_for('register'))
-          
-        if not address:
-           flash('Address is required.', 'error')
-           return redirect(url_for('register'))
+            errors['password'] = 'Password must be at least 8 characters and include upper, lower and number.'
 
-        try:
-            birth_date_obj = datetime.strptime(birth_date, '%Y-%m-%d')
-            birth_date = birth_date_obj.strftime('%Y-%m-%d')
-        except ValueError:
-            flash('Invalid date format. Use YYYY-MM-DD', 'error')
-            return redirect(url_for('register'))
+        if not form['address']:
+            errors['address'] = 'Address is required.'
 
-        # Save profile image
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            profile_image = filename
-            session['profile_image'] = filename
+        # strict YYYY-MM-DD only
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', form['birth_date']):
+            errors['birth_date'] = 'Birth date must be in YYYY-MM-DD format.'
         else:
-            flash('File not allowed', 'error')
-            return redirect(url_for('register'))
+            try:
+                birth_date_obj = datetime.strptime(form['birth_date'], '%Y-%m-%d')
+                birth_date = birth_date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                errors['birth_date'] = 'Invalid date. Use real year, month, and day.'
+                birth_date = None
+
+        if file and file.filename:
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                profile_image = filename
+            else:
+                errors['profile_image'] = 'File not allowed.'
+
+        if errors:
+            return render_template("register.html", form=form, errors=errors)
 
         cursor, conn = getCursor()
         if not cursor or not conn:
-            flash('Database connection error', 'error')
-            return redirect(url_for('register'))
+            errors['general'] = 'Database connection error.'
+            return render_template("register.html", form=form, errors=errors)
 
-        # Check both username and email
-        cursor.execute("""
-            SELECT username, email
-            FROM users
-            WHERE username = %s OR email = %s
-        """, (username, email))
-
+        # only check username now
+        cursor.execute("SELECT 1 FROM users WHERE username = %s", (form['username'],))
         existing = cursor.fetchone()
 
         if existing:
-            if existing[0] == username:
-                flash('Username already exists!', 'error')
-            elif existing[1] == email:
-                flash('Email already registered!', 'error')
             cursor.close()
             conn.close()
-            return redirect(url_for('register'))
+            errors['username'] = 'Username already exists.'
+            return render_template("register.html", form=form, errors=errors)
 
-        # only reach this if NO existing user
         password_hash = hashing.hash_value(password, PASSWORD_SALT)
 
         cursor.execute(
@@ -248,10 +249,20 @@ def register():
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (username, first_name, last_name,
-             email, password_hash, phone, address,
-             birth_date, profile_image, role)
+            (
+                form['username'],
+                form['first_name'],
+                form['last_name'],
+                form['email'],
+                password_hash,
+                form['phone'],
+                form['address'],
+                birth_date,
+                profile_image,
+                form['role']
+            )
         )
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -259,7 +270,7 @@ def register():
         flash('Registration successful. Please login now.', 'success')
         return redirect(url_for('login'))
 
-    return render_template("register.html")
+    return render_template("register.html", form=form, errors=errors)
 
 #-------------- Login -------------#
 
@@ -1513,50 +1524,40 @@ def contact():
 
    # pip install pytz (optional but recommended)
 
-
 def send_email(subject, body, name, email, phone):
-    api_key = os.getenv("RESEND_API_KEY")
-    if not api_key:
-        raise Exception("Missing RESEND_API_KEY in environment variables!")
+    smtp_user = os.environ.get("EMAIL_USER")
+    smtp_pass = os.environ.get("EMAIL_PASS")
+    to_addr = os.environ.get("EMAIL_TO", smtp_user)
 
-    resend.api_key = api_key
+    if not smtp_user or not smtp_pass:
+        raise Exception("Missing EMAIL_USER or EMAIL_PASS in environment variables")
 
-    # Recipient – use EMAIL_TO from env, fallback to your Gmail
-    to_addr = os.getenv("EMAIL_TO", "lodge417.form@gmail.com")
-
-    # NZ time
     nz_time = datetime.now(pytz.timezone("Pacific/Auckland")).strftime("%d %b %Y at %I:%M %p NZDT")
 
-    # Nice email body
     email_text = f"""Hi Lodge Matariki 476,
 
 You have received a new enquiry from the website:
 
-Name:     {name}
-Email:    {email}
-Phone:    {phone if phone else 'Not provided'}
+Name: {name}
+Email: {email}
+Phone: {phone if phone else 'Not provided'}
 
 Message:
 {body}
 
 Received: {nz_time}
-
----
-This message was sent via Resend.com
 """
 
-    try:
-        resend.Emails.send({
-            "from": "onboarding@resend.dev",  # Safe for testing
-            "to": [to_addr],
-            "subject": subject,
-            "text": email_text,
-        })
-        print("Email sent successfully to", to_addr)
-        return True
-    except Exception as e:
-        print("RESEND EMAIL FAILED:", str(e))
-        raise  # Re-raise so contact route can catch it
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = to_addr
+    msg["Reply-To"] = email
+    msg.set_content(email_text)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(smtp_user, smtp_pass)
+        smtp.send_message(msg)
       
  #===== minimal health-check route =====#     
 @app.route('/health')

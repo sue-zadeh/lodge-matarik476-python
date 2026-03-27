@@ -3,8 +3,8 @@
 {% block title %}Register{% endblock %}
 
 {% block content %}
-<div class="container">
-  <div class="row justify-content-center">
+      <div class="container">
+        <div class="row justify-content-center">
     <div class="col-md-6">
       <h1 class="text-center text-success mt-5">Register</h1>
 
@@ -24,17 +24,22 @@
         <div class="form-group mb-3">
           <label for="username"><i class="fas fa-user"></i> Username</label>
           <input
-            type="text"
-            name="username"
-            class="form-control"
-            id="username"
-            placeholder="Username"
-            required
-            minlength="5"
-          >
-          <small class="form-text text-muted">
-            At least 5 characters.
-          </small>
+           type="text"
+           name="username"
+           class="form-control {% if errors.username %}is-invalid{% endif %}"
+           id="username"
+           placeholder="Username"
+           required
+           minlength="5"
+           value="{{ form.username if form else '' }}"
+           >
+          <p class="card-text small">
+             At least 5 characters and must be unique. 
+          </p>
+          {% if errors.username %}
+
+          <div class="text-danger small mt-1">{{ errors.username }}</div>
+           {% endif %}
         </div>
 
         <!-- First name -->
@@ -43,11 +48,15 @@
           <input
             type="text"
             name="first_name"
-            class="form-control"
+            class="form-control {% if errors.first_name %}is-invalid{% endif %}"
             id="first_name"
             placeholder="First Name"
             required
+            value="{{ form.first_name if form else '' }}"
           >
+          {% if errors.first_name %}
+           <div class="text-danger small mt-1">{{ errors.first_name }}</div>
+          {% endif %}
         </div>
 
         <!-- Last name -->
@@ -56,11 +65,15 @@
           <input
             type="text"
             name="last_name"
-            class="form-control"
+            class="form-control {% if errors.last_name %}is-invalid{% endif %}"
             id="last_name"
             placeholder="Last Name"
             required
-          >
+            value="{{ form.last_name if form else '' }}"
+           >
+           {% if errors.last_name %}
+             <div class="text-danger small mt-1">{{ errors.last_name }}</div>
+           {% endif %}
         </div>
 
         <!-- Email -->
@@ -68,12 +81,16 @@
           <label for="email"><i class="fas fa-envelope"></i> Email</label>
           <input
             type="email"
+            class="form-control {% if errors.email %}is-invalid{% endif %}"
             name="email"
-            class="form-control"
             id="email"
             placeholder="Email"
             required
-          >
+           value="{{ form.email if form else '' }}"
+           >
+           {% if errors.email %}
+             <div class="text-danger small mt-1">{{ errors.email }}</div>
+           {% endif %}
         </div>
 
         <!-- Phone -->
@@ -82,11 +99,14 @@
           <input
             type="text"
             name="phone"
-            class="form-control"
+            class="form-control {% if errors.phone %}is-invalid{% endif %}"
             id="phone"
             placeholder="Phone"
-          >
-          <small class="form-text text-muted">
+            value="{{ form.phone if form else '' }}"
+           >
+          {% if errors.phone %}
+            <div class="text-danger small mt-1">{{ errors.phone }}</div>
+          {% endif %}          <small class="form-text text-muted">
             Digits and “+” only.
           </small>
         </div>
@@ -97,24 +117,31 @@
           <input
             type="text"
             name="address"
-            class="form-control"
+            class="form-control {% if errors.address %}is-invalid{% endif %}"
             id="address"
             placeholder="Address"
             required
           >
+          {% if errors.address %}
+            <div class="text-danger small mt-1">{{ errors.address }}</div>
+          {% endif %}
         </div>
 
         <!-- Date of Birth -->
         <div class="form-group mb-3">
           <label for="birth_date"><i class="fas fa-calendar"></i> Date of Birth</label>
+          
           <input
-            type="date"
-            name="birth_date"
-            class="form-control"
-            id="birth_date"
-            required
-            min="1900-01-01"
-          >
+           type="date"
+           name="birth_date"
+           class="form-control {% if errors.birth_date %}is-invalid{% endif %}"
+           id="birth_date"
+           required
+           value="{{ form.birth_date if form else '' }}"
+>
+         {% if errors.birth_date %}
+           <div class="text-danger small mt-1">{{ errors.birth_date }}</div>
+         {% endif %}
         </div>
 
         <!-- Password -->
@@ -136,8 +163,11 @@
           <i class="fas fa-eye text-secondary"></i>
          </span>
           <p class="card-text small">
-            At least 8 characters, with upper, lower, and a number.
+            At least 8 characters, with upper, lower, and number.
           </p>
+          {% if errors.password %}
+             <div class="text-danger small mt-1">{{ errors.password }}</div>
+          {% endif %}
         </div>
 
         <!-- Confirm Password -->
@@ -155,6 +185,9 @@
            style="position:absolute; right:15px; top:38px; cursor:pointer;">
           <i class="fas fa-eye text-secondary"></i>
          </span>
+         {% if errors.confirm_password %}
+            <div class="text-danger small mt-1">{{ errors.confirm_password }}</div>
+         {% endif %}
         </div>
 
         <!-- Profile picture -->
@@ -166,21 +199,28 @@
             class="form-control-file"
             id="profile_image"
           >
+          {% if errors.profile_image %}
+            <div class="text-danger small mt-1">{{ errors.profile_image }}</div>
+          {% endif %}
         </div>
 
         <!-- Role -->
   {% if session.get('role') == 'admin' %}
         <div class="form-group mb-4">
           <label class="form-label">Role</label>
-           <select name="role" class="form-select">
-           <option value="member" selected>Member</option>
-           <option value="admin">Admin</option>
-        </select>
+          <select name="role" class="form-select">
+            <option value="member" {% if not form or form.role == 'member' %}selected{% endif %}>Member</option>
+            <option value="admin" {% if form and form.role == 'admin' %}selected{% endif %}>Admin</option>
+          </select>
+
       </div>
 {% endif %}
         <button type="submit" class="btn btn-success btn-block mt-2">
           <i class="fas fa-user-plus"></i> Register
         </button>
+        {% if errors.general %}
+         <div class="alert alert-danger">{{ errors.general }}</div>
+        {% endif %}
       </form>
 
       <p class="mt-3">

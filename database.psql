@@ -1,6 +1,6 @@
 
 -- -----------------------------------------------------
--- Table Lodge
+-- Table lodge
 -- -----------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS users (
@@ -29,21 +29,20 @@ CREATE TABLE IF NOT EXISTS admin_messages (
 
 -- Files that admins send to members
 CREATE TABLE IF NOT EXISTS files (
-  file_id SERIAL PRIMARY KEY,
-  subject VARCHAR(255) NOT NULL,
-  description TEXT,
-  filename VARCHAR(255) NOT NULL,
-  is_admin_only BOOLEAN NOT NULL DEFAULT FALSE,
-  uploaded_by INT NOT NULL REFERENCES users(user_id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  is_admin_only BOOLEAN NOT NULL DEFAULT FALSE
+    file_id SERIAL PRIMARY KEY,
+    subject VARCHAR(255) NOT NULL,
+    description TEXT,
+    filename VARCHAR(255) NOT NULL,
+    is_admin_only BOOLEAN NOT NULL DEFAULT FALSE,
+    uploaded_by INT NOT NULL REFERENCES users(user_id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Which member has "read" which file (for new-files notifications)
 CREATE TABLE IF NOT EXISTS file_reads (
-    user_id  INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    file_id  INTEGER NOT NULL REFERENCES files(file_id) ON DELETE CASCADE,
-    read_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    file_id INTEGER NOT NULL REFERENCES files(file_id) ON DELETE CASCADE,
+    read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, file_id)
 );
 

@@ -6,9 +6,15 @@ services:
     ports:
       - "8000:8000"  
     environment:
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - EMAIL_TO=lodge417.form@gmail.com
-      - FLASK_SECRET_KEY= "2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5"
+      DB_NAME: lodge
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db
+      DB_PORT: 5432 
+      SECRET_KEY: '2232b1ec1b426bc383f1ec071979d87dd91e7b2e8467a5e0620e714ee1affdc5'
+      EMAIL_USER: lodge417.form@gmail.com
+      EMAIL_PASS: agetrjlkwjsestkr
+      EMAIL_TO: lodge417.form@gmail.com
     depends_on:
       - db
     volumes:
@@ -22,7 +28,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

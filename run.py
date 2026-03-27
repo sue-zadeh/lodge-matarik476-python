@@ -12,7 +12,7 @@ if os.getenv("RAILWAY_ENVIRONMENT") is None:
         print("dotenv not installed - skipping (normal in production)")
 
 # Import your app
-from app import app  # Assuming this is your Flask app
+from app import app  # this is Flask app
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5002)
+    app.run(debug=True)
