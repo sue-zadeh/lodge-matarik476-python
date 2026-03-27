@@ -13,7 +13,6 @@ app.config["FILE_UPLOAD_FOLDER"] = os.environ.get("FILE_UPLOAD_FOLDER", "static/
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["FILE_UPLOAD_FOLDER"], exist_ok=True)
 
-
 # import routes so they register on the app
 from app import views
 # from app import event
