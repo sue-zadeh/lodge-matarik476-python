@@ -4,181 +4,346 @@
 
 {% block content %}
 
-{# --- Page-specific styles (kept small) --- #}
 <style>
-  .public-hero {
-    min-height: 85vh;
-    border-radius: 1.5rem;
-    object-fit: cover;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+  .home-hero {
+    position: relative;
+    min-height: 88vh;
+    border-radius: 28px;
     overflow: hidden;
     background:
-          linear-gradient(135deg, rgba(216, 192, 147, 0.15), rgba(9, 19, 39, 0.95)),
-
-      url("{{ url_for('static', filename='img/weare3.jpg') }}") center/cover no-repeat;
-    color: #f5f5f5;  
+      linear-gradient(120deg, rgba(5,12,26,0.92), rgba(5,12,26,0.45), rgba(5,12,26,0.9)),
+      url("{{ url_for('static', filename='img/members.png') }}") center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 
-  .public-hero-content {
-    background: radial-gradient(circle at top left,
-      rgba(5,12,26,0.9), rgba(5,12,26,0.98));
+  .home-hero-content {
+    max-width: 850px;
+    padding: 40px 24px;
+    color: #fff;
   }
 
-  .section-card {
-    background-color: #0f172a;              /* slightly lighter navy */
-    border-radius: 1.5rem;
-    border: 1px solid rgba(207,161,74,0.35);
-    color: #f5f5f5;                          /* force light text */
+  .hero-badge {
+    display: inline-block;
+    color: #cfa14a;
+    border: 1px solid rgba(207,161,74,0.6);
+    padding: 8px 18px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+    background: rgba(5,12,26,0.7);
+    font-weight: 600;
   }
 
-  .pillars-icon {
+  .home-hero h1 {
+    font-size: clamp(2.4rem, 6vw, 5.2rem);
+    font-weight: 800;
+    line-height: 1.05;
+    margin-bottom: 20px;
+  }
+
+  .home-hero p {
+    font-size: clamp(1rem, 2vw, 1.35rem);
+    color: rgba(255,255,255,0.88);
+    max-width: 720px;
+    margin: 0 auto 30px;
+  }
+
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .btn-hero-gold {
+    background: #cfa14a;
+    color: #050c1a;
+    border: 1px solid #cfa14a;
+    font-weight: 700;
+    padding: 12px 28px;
+    border-radius: 999px;
+    text-decoration: none;
+  }
+
+  .btn-hero-outline {
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.75);
+    font-weight: 700;
+    padding: 12px 28px;
+    border-radius: 999px;
+    text-decoration: none;
+  }
+
+  .scroll-down {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    color: #cfa14a;
     font-size: 2rem;
+    animation: bounceArrow 1.4s infinite;
+  }
+  .btn-shine {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-shine:hover {
+  transform: translateY(-5px) scale(1.04);
+  box-shadow:
+    0 15px 35px rgba(207,161,74,0.45),
+    0 0 25px rgba(207,161,74,0.35);
+}
+
+.btn-shine::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -120%;
+  width: 70%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.85),
+    transparent
+  );
+  transform: rotate(20deg);
+}
+
+.btn-shine:hover::before {
+  animation: shineFast 0.7s ease forwards;
+}
+
+@keyframes shineFast {
+  0% {
+    left: -120%;
+  }
+  100% {
+    left: 180%;
+  }
+}
+
+.hero-bg {
+  animation: heroZoom 12s ease-in-out infinite alternate;
+}
+
+@keyframes heroZoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+.btn-warning.btn-shine:hover {
+  background: #f0c96a;
+  border-color: #f0c96a;
+}
+  .home-card {
+    background: rgba(15,23,42,0.95);
+    border: 1px solid rgba(207,161,74,0.35);
+    border-radius: 24px;
+    padding: 32px;
+    height: 100%;
+    color: #fff;
+    transition: 0.25s ease;
   }
 
-  .cta-band {
+  .home-card:hover {
+    transform: translateY(-8px);
+    border-color: #cfa14a;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+  }
+
+  .home-icon {
+    color: #cfa14a;
+    font-size: 2.4rem;
+    margin-bottom: 18px;
+  }
+
+  .stats-box {
+    background: linear-gradient(135deg, rgba(207,161,74,0.16), rgba(15,23,42,0.95));
+    border: 1px solid rgba(207,161,74,0.4);
+    border-radius: 24px;
+    padding: 30px;
+    text-align: center;
+  }
+
+  .stats-number {
+    font-size: 2.6rem;
+    color: #cfa14a;
+    font-weight: 800;
+  }
+
+  .gallery-img {
+    height: 260px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 22px;
+    border: 1px solid rgba(207,161,74,0.35);
+    transition: 0.25s ease;
+  }
+
+  .gallery-img:hover {
+    transform: scale(1.03);
+  }
+
+  .cta-final {
+    border-radius: 30px;
+    padding: 60px 25px;
+    text-align: center;
     background:
-      linear-gradient(135deg, rgba(207,161,74,0.15), rgba(5,12,26,0.95)),
-      url("{{ url_for('static', filename='img/pic-home3.jpg') }}") center/cover no-repeat;
-    border-radius: 1.5rem;
-    color: #f5f5f5;
+      linear-gradient(135deg, rgba(5,12,26,0.9), rgba(5,12,26,0.6)),
+      url("{{ url_for('static', filename='img/pic-home4.jpg') }}") center/cover no-repeat;
+    border: 1px solid rgba(207,161,74,0.4);
+  }
+  .scroll-arrow {
+  animation: bounceArrow 1.4s infinite;
+}
+
+@keyframes bounceArrow {
+  0%,100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(12px);
+  }
+}
+
+  @media (max-width: 768px) {
+    .home-hero {
+      min-height: 78vh;
+      border-radius: 18px;
+    }
+
+    .gallery-img {
+      height: 220px;
+    }
   }
 </style>
 
-{# ================= HERO ================= #}
-<div class="public-hero mb-5 shadow-lg" data-aos="fade-up">
-  <div class="row g-0 h-100">
-    <div class="col-md-6 d-flex align-items-center public-hero-content p-5">
-      <div>
-        <p class="text-warning text-uppercase small mb-2">
-          A lodge of friendship, support, and community
-        </p>
-        <h1 class="display-5 fw-bold mb-3">
-          Freemasonry in the heart of Tāmaki Makaurau.
-        </h1>
-        <p class="lead mb-4">
-          Lodge Matariki 476 is a welcoming lodge where good men support each
-          other, serve the community, and enjoy genuine fellowship.
-        </p>
+<section class="home-hero mb-5" data-aos="fade-up">
+  <div class="home-hero-content">
+    <span class="hero-badge fs-3">Lodge Matariki 476</span>
 
-        {% if not session.get('user_id') %}
-          <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('contact') }}" class="btn btn-warning fw-semibold px-4">
-              Join the Lodge
-            </a>
-            <a href="{{ url_for('login') }}" class="btn btn-outline-light fw-semibold px-4">
-              Members Login
-            </a>
-          </div>
-        {% else %}
-          <a href="{{ url_for('profile') }}" class="btn btn-warning fw-semibold px-4">
-            Go to your profile
-          </a>
-        {% endif %}
+    <h1 class='fw-bold'>Friendship, tradition, and community.</h1>
+
+    <p class='fs-4'>
+      A welcoming Freemasons lodge in Auckland where members connect,
+      grow, support each other, and contribute to the community.
+    </p>
+
+    <div class="hero-actions">
+      <a href="{{ url_for('contact') }}" class="btn btn-warning fw-semibold px-4 fs-6 rounded shadow btn-shine">Get in Touch</a>
+      <a href="#discover" class="btn btn-outline-light fw-semibold px-4 rounded shadow btn-shine">Discover More</a>
+    </div>
+  </div>
+
+  <a href="#discover" class="scroll-down">
+    <i class="fas fa-chevron-down"></i>
+  </a>
+</section>
+
+<section id="discover" class="mb-5">
+  <div class="text-center mb-4" data-aos="fade-up">
+    <h2 class="fw-bold text-warning">What Lodge Matariki offers</h2>
+    <p class="text-light-70">
+      A place for fellowship, personal growth, tradition, and service.
+    </p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4" data-aos="fade-up">
+      <div class="home-card text-center">
+        <div class="home-icon"><i class="fas fa-handshake"></i></div>
+        <h4>Friendship</h4>
+        <p>Build genuine connections with members from different backgrounds and life experiences.</p>
       </div>
     </div>
 
-    <div class="col-md-6 d-none d-md-block">
-      <img src="{{ url_for('static', filename='img/home.png') }}"
-           alt="Lodge members"
-           class="img-fluid h-100 w-100"
-           style="object-fit: cover;">
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="120">
+      <div class="home-card text-center">
+        <div class="home-icon"><i class="fas fa-compass"></i></div>
+        <h4>Growth</h4>
+        <p>Learn through values, symbolism, shared responsibility, and meaningful lodge work.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="240">
+      <div class="home-card text-center">
+        <div class="home-icon"><i class="fas fa-heart"></i></div>
+        <h4>Service</h4>
+        <p>Support the wider community through practical help, charity, and quiet contribution.</p>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-{# ============ THREE PILLARS / “GOOD VIBES” STYLE ============ #}
-<div class="section-card p-4 mb-5" data-aos="fade-up">
+
+
+<section class="mb-5">
   <div class="row g-4 align-items-center">
-    <div class="col-lg-6">
-      <h2 class="mb-3">What you’ll find here</h2>
-      <p class="mb-3">
-        Becoming a Freemason isn’t about secret handshakes – it’s about
-        friendship, personal growth, and helping others.
+    <div class="col-lg-6" data-aos="fade-right">
+      <h2 class="fw-bold text-warning mb-3">A modern lodge with strong traditions</h2>
+      <p class="fs-5 text-light-70">
+        Lodge Matariki brings together men who value respect, integrity,
+        fellowship, and community service.
       </p>
-      <p class="mb-0">
-        Whether you’re curious, new to the craft, or a visiting brother, you’ll
-        find a warm welcome at Matariki.
+      <p class="fs-5 text-light-70">
+        Members can stay connected through the online portal, view lodge events,
+        access shared files, and manage their own profile.
       </p>
+      <a href="{{ url_for('contact') }}" class="btn btn-warning fw-semibold px-4 mt-2 rounded shadow btn-shine">
+        Contact Us
+      </a>
     </div>
-    <div class="col-lg-6">
-      <div class="row g-3">
-        <div class="col-md-4 text-center">
-          <div class="pillars-icon mb-2 text-warning">
-            <i class="fas fa-handshake"></i>
-          </div>
-          <h5>Friendship</h5>
-          <p class="small text mb-0">
-            Genuine connections and support, inside and outside the lodge room.
-          </p>
-        </div>
-        <div class="col-md-4 text-center">
-          <div class="pillars-icon mb-2 text-warning">
-            <i class="fas fa-heart"></i>
-          </div>
-          <h5>Charity</h5>
-          <p class="small text mb-0">
-            Quietly helping our local community in practical ways.
-          </p>
-        </div>
-        <div class="col-md-4 text-center">
-          <div class="pillars-icon mb-2 text-warning">
-            <i class="fas fa-compass"></i>
-          </div>
-          <h5>Tradition</h5>
-          <p class="small text mb-0">
-            Ritual, symbolism, and values passed down through generations.
-          </p>
-        </div>
-      </div>
+
+    <div class="col-lg-6" data-aos="fade-left">
+      <img src="{{ url_for('static', filename='img/pic-home3.jpg') }}"
+           alt="Lodge members"
+           class="img-fluid rounded-4 shadow-lg">
     </div>
   </div>
-</div>
+</section>
 
-{# ============ ABOUT / OUR STORY ============ #}
-<div class="row g-4 mb-5 justify-content-center">
-  <div class="col-lg-6 " data-aos="fade-right">
-   <div class="section-card p-4 h-100 d-flex flex-column justify-content-center">
-      <h2 class="mb-3 ">Who we are</h2>
-      <p class="mb-3 fs-5">
-        Lodge Matariki 476 is part of Freemasonry in New Zealand. We bring
-        together members from different backgrounds who share values of integrity,
-        respect, and service.
-      </p>
-      <p class="mb-0 fs-5">
-        Our meetings combine tradition with modern life – a place to pause,
-        connect, and do something meaningful for others.
-      </p>
-    </div>
+<section class="mb-5">
+  <div class="text-center mb-4" data-aos="fade-up">
+    <h2 class="fw-bold text-warning">Inside Lodge Matariki</h2>
+    <p class="text-light-70">A glimpse of lodge gatherings, ceremonies, and fellowship.</p>
   </div>
 
-  <div class="col-lg-6" data-aos="fade-left">
-    <div class="section-card p-0 h-100">
-      <img src="{{ url_for('static', filename='img/pic-home4.jpg') }}"
-           alt="Lodge ceremony"
-           class="img-fluid w-100"
-           style="border-radius: 1.5rem;">
+  <div class="row g-4">
+    <div class="col-md-6 col-lg-3" data-aos="fade-up">
+      <img src="{{ url_for('static', filename='img/home.png') }}" class="gallery-img" alt="Lodge gathering">
+    </div>
+
+    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="100">
+      <img src="{{ url_for('static', filename='img/weare.jpg') }}" class="gallery-img" alt="Lodge members">
+    </div>
+
+    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="200">
+      <img src="{{ url_for('static', filename='img/weare2.jpg') }}" class="gallery-img" alt="Lodge ceremony">
+    </div>
+
+    <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="300">
+      <img src="{{ url_for('static', filename='img/pic-home4.jpg') }}" class="gallery-img" alt="Lodge event">
     </div>
   </div>
-</div>
+</section>
 
-{# ============ RSVP / CALL TO ACTION BAND ============ #}
-<div class="cta-band text-center text-light py-5" data-aos="zoom-in">
-  <h2 class="display-6 fw-bold mb-2">Thinking about visiting?</h2>
-  <p class="lead mb-4">
-    We welcome enquiries from good men who are curious about Freemasonry,
-    and from travelling brethren who would like to attend a meeting.
+<section class="cta-final" data-aos="zoom-in">
+  <h2 class="fw-bold text-warning mb-3">Interested in learning more?</h2>
+  <p class="lead text-light mb-4">
+    Get in touch with Lodge Matariki 476 and start the conversation.
   </p>
-  <div class="d-flex justify-content-center gap-3 flex-wrap">
-    <a href="{{ url_for('contact') }}" class="btn btn-light fw-semibold px-4">
-      Request to Join
-    </a>
-   <!-- <a href="#" class="btn btn-outline-light fw-semibold px-4">
-      Contact the Secretary
-    </a>-->
-  </div>
-</div>
-
+  <a href="{{ url_for('contact') }}" class="btn btn-warning fw-bold px-5 py-2">
+    Contact Us
+  </a>
+</section>
 
 {% endblock %}
