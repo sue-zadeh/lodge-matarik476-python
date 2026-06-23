@@ -7,12 +7,18 @@
 <style>
   .home-hero {
     position: relative;
-    min-height: 88vh;
+    min-height: 85vh;
     border-radius: 28px;
     overflow: hidden;
     background:
-      linear-gradient(120deg, rgba(5,12,26,0.92), rgba(5,12,26,0.45), rgba(5,12,26,0.9)),
-      url("{{ url_for('static', filename='img/members.png') }}") center/cover no-repeat;
+    linear-gradient(
+      120deg,
+      rgba(5,12,26,0.92),
+      rgba(5,12,26,0.45),
+      rgba(5,12,26,0.9)
+    ),
+    url("{{ url_for('static', filename='img/members.png') }}")
+    center 30% / cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -24,7 +30,11 @@
     padding: 40px 24px;
     color: #fff;
   }
-
+  .home-hero h2 {
+    font-size: clamp(1.8rem, 4vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+  }
   .hero-badge {
     display: inline-block;
     color: #cfa14a;
@@ -37,7 +47,7 @@
   }
 
   .home-hero h1 {
-    font-size: clamp(2.4rem, 6vw, 5.2rem);
+    font-size: clamp(2.1rem, 5vw, 5rem);
     font-weight: 800;
     line-height: 1.05;
     margin-bottom: 20px;
@@ -61,7 +71,7 @@
     background: #cfa14a;
     color: #050c1a;
     border: 1px solid #cfa14a;
-    font-weight: 700;
+    font-weight: 600;
     padding: 12px 28px;
     border-radius: 999px;
     text-decoration: none;
@@ -82,8 +92,8 @@
     bottom: 28px;
     transform: translateX(-50%);
     color: #cfa14a;
-    font-size: 2rem;
-    animation: bounceArrow 1.4s infinite;
+    font-size: 2.5rem;
+    animation: bounceArrow 1.2s infinite;
   }
   .btn-shine {
   position: relative;
@@ -148,7 +158,7 @@
     background: rgba(15,23,42,0.95);
     border: 1px solid rgba(207,161,74,0.35);
     border-radius: 24px;
-    padding: 32px;
+    padding: 12px;
     height: 100%;
     color: #fff;
     transition: 0.25s ease;
@@ -202,7 +212,13 @@
       url("{{ url_for('static', filename='img/pic-home4.jpg') }}") center/cover no-repeat;
     border: 1px solid rgba(207,161,74,0.4);
   }
-  .scroll-arrow {
+ .scroll-down {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  color: #cfa14a;
+  font-size: 2rem;
   animation: bounceArrow 1.4s infinite;
 }
 
@@ -231,7 +247,7 @@
   <div class="home-hero-content">
     <span class="hero-badge fs-3">Lodge Matariki 476</span>
 
-    <h1 class='fw-bold'>Friendship, tradition, and community.</h1>
+    <h2 class='fw-bold'>Friendship, tradition, and community.</h2>
 
     <p class='fs-4'>
       A welcoming Freemasons lodge in Auckland where members connect,
@@ -244,8 +260,8 @@
     </div>
   </div>
 
-  <a href="#discover" class="scroll-down">
-    <i class="fas fa-chevron-down"></i>
+  <a href="#discover" class="scroll-down scroll-arrow">
+    <i class="fas fa-angle-double-down"></i>
   </a>
 </section>
 
