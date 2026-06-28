@@ -243,18 +243,19 @@
   }
 </style>
 
-<section class="home-hero mb-5" data-aos="fade-up">
+<section class="home-hero mb-5" data-aos="fade-down-right" data-aos-offset="400"
+     data-aos-easing="ease-in-sine">
   <div class="home-hero-content">
-    <span class="hero-badge fs-4">Lodge Matariki 476</span>
+    <span class="hero-badge fs-4" data-aos="fade-down" data-aos-offset="400">Lodge Matariki 476</span>
 
-    <h2 class='fw-bold'>Friendship, tradition, and community.</h2>
+    <h2 class='fw-bold' data-aos="fade-right" data-aos-offset="400">Friendship, tradition, and community.</h2>
 
-    <p class='fs-4'>
+    <p class='fs-4' data-aos="fade-left">
       A welcoming Freemasons lodge in Auckland where members connect,
       grow, support each other, and contribute to the community.
     </p>
 
-    <div class="hero-actions">
+    <div class="hero-actions" >
       <a href="{{ url_for('contact') }}" class="btn btn-warning fw-semibold px-4 fs-6 rounded shadow btn-shine">Get in Touch</a>
       <a href="#discover" class="btn btn-outline-light fw-semibold px-4 rounded shadow btn-shine">Discover More</a>
     </div>
@@ -355,7 +356,7 @@
   <p class="lead text-light mb-4">
     Get in touch with Lodge Matariki 476 and start the conversation.
   </p>
-  <a href="{{ url_for('contact') }}" class="btn btn-warning fw-bold px-5 py-2">
+  <a href="{{ url_for('contact') }}" class="btn btn-warning fw-semibold px-4 mt-2 rounded shadow btn-shine">
     Contact Us
   </a>
 </section>
