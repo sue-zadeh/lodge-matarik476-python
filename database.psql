@@ -16,10 +16,14 @@ CREATE TABLE IF NOT EXISTS users (
     profile_image VARCHAR(255),
     role VARCHAR(20) NOT NULL DEFAULT 'member' CHECK (role IN ('member','admin')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    -- Forgot password
+    password_reset_token VARCHAR(255),
+    password_reset_token_expiry TIMESTAMPTZ,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 
 CREATE TABLE IF NOT EXISTS admin_messages (
     id        SERIAL PRIMARY KEY,

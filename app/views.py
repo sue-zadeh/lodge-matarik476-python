@@ -230,16 +230,55 @@ def register():
             errors['general'] = 'Database connection error.'
             return render_template("register.html", form=form, errors=errors)
 
-        # only check username now
-        cursor.execute("SELECT 1 FROM users WHERE username = %s", (form['username'],))
-        existing = cursor.fetchone()
+            # Check if username already exists
+                 cursor.execute(
+            """
+             SELECT 1
+             FROM users
+             WHERE username = %s
+             """,
+             (form['username'],)
+        )
 
-        if existing:
+        username_exists = cursor.fetchone()
+
+        if username_exists:
             cursor.close()
             conn.close()
-            errors['username'] = 'Username already exists.'
-            return render_template("register.html", form=form, errors=errors)
 
+             errors['username'] = 'Username already exists.'
+
+             return render_template(
+                 "register.html",
+                 form=form,
+                 errors=errors
+             )
+
+
+          # Check if email already exists
+          cursor.execute(
+              """
+              SELECT 1
+              FROM users
+              WHERE LOWER(email) = LOWER(%s)
+              """,
+              (form['email'],)
+          )
+
+          email_exists = cursor.fetchone()
+
+          if email_exists:
+              cursor.close()
+              conn.close()
+          
+    errors['email'] = 'Email already exists.'
+          
+              return render_template(
+                  "register.html",
+                  form=form,
+                  errors=errors
+              )
+ 
         password_hash = hashing.hash_value(password, PASSWORD_SALT)
 
         cursor.execute(
@@ -391,6 +430,149 @@ def forgot_password():
 
     return render_template('forgot_password.html')
 
+
+# ======================  Reset Password Rout ===================#
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+
+    try:
+
+        with db_cursor(dictionary=True) as (cursor, conn):
+
+            cursor.execute("""
+                SELECT user_id
+                FROM users
+                WHERE password_reset_token = %s
+                  AND password_reset_token_expiry > NOW()
+                  AND COALESCE(is_active, TRUE) = TRUE
+                LIMIT 1
+            """, (token,))
+
+            user = cursor.fetchone()
+
+            if not user:
+                flash(
+                    'This password reset link is invalid or has expired.',
+                    'danger'
+                )
+                return redirect(url_for('forgot_password'))
+
+            if request.method == 'POST':
+
+                new_password = request.form.get(
+                    'new_password',
+                    ''
+                )
+
+                confirm_password = request.form.get(
+                    'confirm_password',
+                    ''
+                )
+
+                if new_password != confirm_password:
+                    flash(
+                        'Passwords do not match.',
+                        'danger'
+                    )
+
+                    return render_template(
+                        'reset_password.html'
+                    )
+
+                # Same password rules as registration
+                if (
+                    len(new_password) < 8
+                    or not re.search(r'[A-Z]', new_password)
+                    or not re.search(r'[a-z]', new_password)
+                    or not re.search(r'[0-9]', new_password)
+                ):
+
+                    flash(
+                        'Password must be at least 8 characters and include upper, lower and number.',
+                        'danger'
+                    )
+
+                    return render_template(
+                        'reset_password.html'
+                    )
+
+                # Use the SAME hashing method as Lodge login/register
+                password_hash = hashing.hash_value(
+                    new_password,
+                    PASSWORD_SALT
+                )
+
+                cursor.execute("""
+                    UPDATE users
+                    SET password = %s,
+                        password_reset_token = NULL,
+                        password_reset_token_expiry = NULL
+                    WHERE user_id = %s
+                """, (
+                    password_hash,
+                    user['user_id']
+                ))
+
+                flash(
+                    'Your password has been reset successfully. Please login.',
+                    'success'
+                )
+
+                return redirect(url_for('login'))
+
+    except Exception:
+
+        app.logger.exception('Reset password error')
+
+        flash(
+            'Something went wrong. Please try again.',
+            'danger'
+        )
+
+        return redirect(url_for('forgot_password'))
+
+    return render_template('reset_password.html')
+  
+  # ============================== Email Message For Forgot Password ===============#
+  
+  def send_password_reset_email(to_email, reset_link):
+
+    message = EmailMessage()
+
+    message['Subject'] = 'Reset your password'
+    message['From'] = os.environ.get('MAIL_USERNAME')
+    message['To'] = to_email
+
+    message.set_content(
+        f"""
+Hello,
+
+We received a request to reset your password.
+
+Please use the link below to create a new password:
+
+{reset_link}
+
+This link will expire in 1 hour.
+
+If you did not request a password reset, you can ignore this email.
+"""
+    )
+
+    with smtplib.SMTP(
+        os.environ.get('MAIL_SERVER'),
+        int(os.environ.get('MAIL_PORT', 587))
+    ) as smtp:
+
+        smtp.starttls()
+
+        smtp.login(
+            os.environ.get('MAIL_USERNAME'),
+            os.environ.get('MAIL_PASSWORD')
+        )
+
+        smtp.send_message(message)
 
 # ------ Routes for home_members and home_admins ------ #
 
