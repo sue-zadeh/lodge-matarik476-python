@@ -16,6 +16,8 @@ import smtplib
 from urllib.parse import urlencode
 import pytz
 from contextlib import contextmanager
+# For forgot password and tokenimport uuid
+import uuid
 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 
@@ -316,7 +318,78 @@ def login():
 
     return render_template("login.html")
 
+# ---------------- Forgot Password Rout  -----------------------------#
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+
+    if request.method == 'POST':
+
+        # Email typed by the user
+        email = request.form.get('email', '').strip().lower()
+
+        if not email:
+            flash('Please enter your email address.', 'danger')
+            return redirect(url_for('forgot_password'))
+
+        try:
+            with db_cursor(dictionary=True) as (cursor, conn):
+
+                # IMPORTANT:
+                # We only search the email stored in the member profile.
+                cursor.execute("""
+                    SELECT user_id, email
+                    FROM users
+                    WHERE LOWER(email) = %s
+                      AND COALESCE(is_active, TRUE) = TRUE
+                    LIMIT 1
+                """, (email,))
+
+                user = cursor.fetchone()
+
+                if user:
+
+                    # Create a secure one-time token
+                    token = str(uuid.uuid4())
+
+                    # Link valid for one hour
+                    expiry = datetime.utcnow() + timedelta(hours=1)
+
+                    cursor.execute("""
+                        UPDATE users
+                        SET password_reset_token = %s,
+                            password_reset_token_expiry = %s
+                        WHERE user_id = %s
+                    """, (
+                        token,
+                        expiry,
+                        user['user_id']
+                    ))
+
+                    reset_link = url_for(
+                        'reset_password',
+                        token=token,
+                        _external=True
+                    )
+
+                    send_password_reset_email(
+                        user['email'],
+                        reset_link
+                    )
+
+        except Exception:
+            app.logger.exception('Forgot password error')
+
+        # Always show same message.
+        # Do not tell people whether an email exists.
+        flash(
+            'If this email is registered, a password reset link has been sent.',
+            'success'
+        )
+
+        return redirect(url_for('forgot_password'))
+
+    return render_template('forgot_password.html')
 
 
 # ------ Routes for home_members and home_admins ------ #

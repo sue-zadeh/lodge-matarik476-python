@@ -29,7 +29,13 @@
     <i class="fas fa-eye text-secondary"></i>
   </span>
 </div>
-          
+       
+<div class="text-end mb-3">
+    <a href="{{ url_for('forgot_password') }}"
+       class="text-success text-decoration-none">
+        Forgot password?
+    </a>
+</div>
 
             {% if toLogin and not registered %}
             <div class="alert alert-danger"   role="alert">
