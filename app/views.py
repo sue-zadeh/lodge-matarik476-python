@@ -6,11 +6,9 @@ from flask_hashing import Hashing
 import logging
 import psycopg2
 import psycopg2.extras
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from app import app
 from connect import get_db  # our PostgreSQL connection
-from datetime import timedelta
-from datetime import datetime
 from email.message import EmailMessage
 import smtplib
 from urllib.parse import urlencode
@@ -231,14 +229,14 @@ def register():
             return render_template("register.html", form=form, errors=errors)
 
             # Check if username already exists
-                 cursor.execute(
+        cursor.execute(
             """
              SELECT 1
              FROM users
              WHERE username = %s
              """,
              (form['username'],)
-        )
+            )
 
         username_exists = cursor.fetchone()
 
@@ -246,34 +244,33 @@ def register():
             cursor.close()
             conn.close()
 
-             errors['username'] = 'Username already exists.'
+            errors['username'] = 'Username already exists.'
 
-             return render_template(
+            return render_template(
                  "register.html",
                  form=form,
                  errors=errors
              )
 
 
-          # Check if email already exists
-          cursor.execute(
+        # Check if email already exists
+        cursor.execute(
               """
               SELECT 1
               FROM users
               WHERE LOWER(email) = LOWER(%s)
               """,
               (form['email'],)
-          )
+          )      
+        email_exists = cursor.fetchone()
 
-          email_exists = cursor.fetchone()
-
-          if email_exists:
-              cursor.close()
-              conn.close()
+        if email_exists:
+               cursor.close()
+               conn.close()
           
-    errors['email'] = 'Email already exists.'
+               errors['email'] = 'Email already exists.'
           
-              return render_template(
+               return render_template(
                   "register.html",
                   form=form,
                   errors=errors
@@ -536,7 +533,7 @@ def reset_password(token):
   
   # ============================== Email Message For Forgot Password ===============#
   
-  def send_password_reset_email(to_email, reset_link):
+def send_password_reset_email(to_email, reset_link):
 
     message = EmailMessage()
 
