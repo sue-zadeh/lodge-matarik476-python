@@ -1,10 +1,258 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block title %}About Us{% endblock %}
 
 {% block content %}
-<div class="container py-5 text-center text-light">
-  <h1 class="mb-3">About Us</h1>
-  <p class="text-light">Coming soon.</p>
+
+<style>
+  .about-hero {
+    min-height: 420px;
+    background:
+      linear-gradient(rgba(5, 12, 26, 0.65), rgba(5, 12, 26, 0.9)),
+      url("{{ url_for('static', filename='img/weare3.jpg') }}");
+    background-size: cover;
+    background-position: center;
+    border-radius: 18px;
+  }
+
+  .about-card {
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid rgba(207, 161, 74, 0.35);
+    border-radius: 14px;
+    height: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .about-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  }
+
+  .gold-divider {
+    width: 70px;
+    height: 3px;
+    background: #cfa14a;
+    margin: 1rem auto;
+  }
+
+  .about-icon {
+    font-size: 2rem;
+    color: #cfa14a;
+  }
+</style>
+
+
+<div class="container">
+
+  <!-- HERO -->
+  <section
+    class="about-hero d-flex align-items-center justify-content-center text-center p-4 mb-5"
+    data-aos="fade-up"
+  >
+
+    <div class="col-lg-8">
+
+      <p class="text-warning fw-semibold mb-2">
+        Lodge Matariki No.476
+      </p>
+
+      <h1 class="display-4 fw-bold text-light">
+        About Us
+      </h1>
+
+      <div class="gold-divider"></div>
+
+      <p class="fs-5 text-light-70 mt-3">
+        A lodge created from a shared vision for renewal,
+        unity and the future of Freemasonry in our district.
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- WHO WE ARE -->
+  <section class="row justify-content-center mb-5">
+
+    <div class="col-lg-9 text-center" data-aos="fade-up">
+
+      <h2 class="text-warning mb-3">
+        Who We Are
+      </h2>
+
+      <p class="text-light fs-5">
+        Lodge Matariki No.476 was formed following a period of
+        consultation and cooperation between lodges across the district.
+        The aim was to create a new beginning while preserving the
+        history, fellowship and values built by previous generations.
+      </p>
+
+      <p class="text-light-70">
+        The new lodge brought together members from Otahuhu No.387,
+        Papatoetoe No.227, Manurewa No.222 and Tironui No.400,
+        creating one lodge with a shared future.
+      </p>
+
+    </div>
+
+  </section>
+
+  <!-- HISTORY SUMMARY -->
+  <section
+    class="bg-dark bg-opacity-75 rounded-4 p-4 p-md-5 mb-5"
+    data-aos="fade-up"
+  >
+
+    <div class="row align-items-center g-4">
+
+      <div class="col-lg-7">
+
+        <p class="text-warning fw-semibold mb-2">
+          Our Beginning
+        </p>
+
+        <h2 class="text-light mb-3">
+          A New Lodge, Built on Strong Foundations
+        </h2>
+
+        <p class="text-light-70">
+          After years of consultation, planning and collaboration,
+          a Petition for Charter was signed by 114 members across
+          the district.
+        </p>
+
+        <p class="text-light-70">
+          Lodge Matariki No.476 was officially Dedicated and
+          Constituted on 19 October 2019 at the Jet Park Function
+          Suite in Mangere.
+        </p>
+
+        <a
+          href="{{ url_for('our_story') }}"
+          class="btn btn-outline-warning mt-2"
+        >
+          Read Our Story
+          <i class="fas fa-arrow-right ms-2"></i>
+        </a>
+
+      </div>
+
+
+      <div class="col-lg-5 text-center">
+
+        <div class="p-4 border border-warning rounded-4">
+
+          <div class="display-4 fw-bold text-warning">
+            476
+          </div>
+
+          <p class="text-light mb-1">
+            Lodge Number
+          </p>
+
+          <hr class="border-secondary">
+
+          <div class="fs-4 fw-semibold text-light">
+            19 October 2019
+          </div>
+
+          <p class="text-secondary mb-0">
+            Dedicated &amp; Constituted
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- TODAY -->
+  <section class="text-center mb-4" data-aos="fade-up">
+
+    <h2 class="text-warning">
+      Lodge Matariki Today
+    </h2>
+
+    <p class="text-light-70 col-lg-8 mx-auto">
+      Following the sale of the Manurewa property,
+      Lodge Matariki has continued to meet at the
+      Onehunga Masonic Centre while suitable premises are sought.
+    </p>
+
+  </section>
+
+
+
+  <!-- VALUES / PURPOSE -->
+  <section class="row g-4 mb-5">
+
+    <div class="col-md-4" data-aos="fade-right">
+
+      <div class="about-card p-4 text-center">
+
+        <i class="fas fa-users about-icon mb-3"></i>
+
+        <h4 class="text-warning">
+          Brotherhood
+        </h4>
+
+        <p class="text-light-70 mb-0">
+          Bringing brethren together through friendship,
+          shared experience and mutual support.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div class="col-md-4" data-aos="fade-up">
+
+      <div class="about-card p-4 text-center">
+
+        <i class="fas fa-history about-icon mb-3"></i>
+
+        <h4 class="text-warning">
+          Tradition
+        </h4>
+
+        <p class="text-light-70 mb-0">
+          Respecting the history of the lodges that came before us
+          while building something strong for the future.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div class="col-md-4" data-aos="fade-left">
+
+      <div class="about-card p-4 text-center">
+
+        <i class="fas fa-star about-icon mb-3"></i>
+
+        <h4 class="text-warning">
+          Future
+        </h4>
+
+        <p class="text-light-70 mb-0">
+          The Lodge was created with a long-term vision to help
+          preserve Freemasonry for future generations.
+        </p>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
 </div>
+
 {% endblock %}
