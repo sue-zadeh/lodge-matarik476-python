@@ -103,8 +103,10 @@
   <div class="row mb-4 g-4">
 
     <!-- WELCOME CARD (LEFT) -->
-    <div class="col-md-6">
+    <div class="col-12 col-md-6">
       <div class="bg-dark rounded-3 shadow-lg p-4 border border-secondary" data-aos="fade-down-right">
+        <div class="d-flex align-items-center">
+
         <img
           src="{% if user.profile_image %}
                   {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
@@ -128,16 +130,16 @@
 
 
     <!-- ANNOUNCEMENTS (RIGHT) -->
-    <div class="col-md-6">
+    <div class="col-12 col-md-6">
       <div class="bg-dark bg-opacity-75 rounded-3 shadow-lg p-4 h-100 d-flex flex-column justify-content-between" data-aos="fade-down-left">
-        <div>
+        
           <h4 class="text-warning mb-2">
             <i class="fas fa-bullhorn me-2"></i> Lodge Announcements
           </h4>
           <p class="mb-2 text-light">
             Stay up to date with meeting nights, special events and important lodge news.
           </p>
-        </div>
+        
 
        <!-- <p class="mt-2 mb-0 text-secondary small">
           
