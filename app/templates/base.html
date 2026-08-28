@@ -4,6 +4,38 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+      content="{% block meta_description %}Lodge Matariki 476 in Auckland, New Zealand. Discover our history, events, community and Freemasonry activities.{% endblock %}">
+
+<meta name="keywords"
+      content="{% block meta_keywords %}Lodge Matariki 476, Freemasons Auckland, Freemasonry New Zealand, Masonic Lodge Auckland{% endblock %}">
+
+<meta name="author" content="Lodge Matariki 476">
+
+<meta name="robots" content="index, follow">
+
+<link rel="canonical"
+      href="{{ request.url_root.rstrip('/') }}{{ request.path }}">
+
+<!-- Open Graph / Facebook / LinkedIn -->
+<meta property="og:type" content="website">
+<meta property="og:title"
+      content="{% block og_title %}Lodge Matariki 476{% endblock %}">
+<meta property="og:description"
+      content="{% block og_description %}Learn about Lodge Matariki 476, our history, events and community in Auckland, New Zealand.{% endblock %}">
+<meta property="og:url"
+      content="{{ request.url }}">
+<meta property="og:image"
+      content="{{ url_for('static', filename='img/logo1.png', _external=True) }}">
+
+<!-- Twitter / social sharing -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title"
+      content="{% block twitter_title %}Lodge Matariki 476{% endblock %}">
+<meta name="twitter:description"
+      content="{% block twitter_description %}Lodge Matariki 476, Auckland, New Zealand.{% endblock %}">
+<meta name="twitter:image"
+      content="{{ url_for('static', filename='img/logo1.png', _external=True) }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
