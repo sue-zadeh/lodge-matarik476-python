@@ -233,7 +233,7 @@ def register():
             """
              SELECT 1
              FROM users
-             WHERE username = %s
+             WHERE LOWER(username) = LOWER(%s)
              """,
              (form['username'],)
             )
@@ -323,7 +323,7 @@ def login():
                 cursor.execute("""
                     SELECT user_id, username, password, role
                     FROM users
-                    WHERE username = %s AND COALESCE(is_active, TRUE) = TRUE
+                    WHERE LOWER(username) = LOWER(%s) AND COALESCE(is_active, TRUE) = TRUE
                     LIMIT 1
                 """, (username,))
                 user = cursor.fetchone()
@@ -535,17 +535,23 @@ def reset_password(token):
   
 def send_password_reset_email(to_email, reset_link):
 
+    smtp_user = os.environ.get("EMAIL_USER")
+    smtp_pass = os.environ.get("EMAIL_PASS")
+
+    if not smtp_user or not smtp_pass:
+        raise Exception("Missing EMAIL_USER or EMAIL_PASS")
+
     message = EmailMessage()
 
-    message['Subject'] = 'Reset your password'
-    message['From'] = os.environ.get('MAIL_USERNAME')
-    message['To'] = to_email
+    message["Subject"] = "Reset your Lodge Matariki password"
+    message["From"] = smtp_user
+    message["To"] = to_email
 
     message.set_content(
         f"""
 Hello,
 
-We received a request to reset your password.
+We received a request to reset your Lodge Matariki password.
 
 Please use the link below to create a new password:
 
@@ -554,23 +560,22 @@ Please use the link below to create a new password:
 This link will expire in 1 hour.
 
 If you did not request a password reset, you can ignore this email.
+
+Lodge Matariki 476
 """
     )
 
-    with smtplib.SMTP(
-        os.environ.get('MAIL_SERVER'),
-        int(os.environ.get('MAIL_PORT', 587))
-    ) as smtp:
-
+    with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
         smtp.starttls()
 
         smtp.login(
-            os.environ.get('MAIL_USERNAME'),
-            os.environ.get('MAIL_PASSWORD')
+            smtp_user,
+            smtp_pass
         )
 
         smtp.send_message(message)
-
+        
+        
 # ------ Routes for home_members and home_admins ------ #
 
 @app.route('/member/home')
@@ -779,7 +784,7 @@ def edit_profile():
             cursor.execute("""
                 SELECT user_id, username, email
                 FROM users
-                WHERE (username = %s OR email = %s)
+                WHERE (LOWER(username) = LOWER(%s) OR LOWER(email) = LOWER(%s))
                   AND user_id <> %s
             """, (username, email, user_id))
             existing = cursor.fetchone()
@@ -887,13 +892,13 @@ def change_password():
 
             cursor, conn = getCursor(dictionary=True)
 
-            cursor.execute("SELECT password FROM users WHERE username = %s", (session['username'],))
+            cursor.execute("SELECT password FROM users WHERE LOWER(username) = LOWER(%s)", (session['username'],))
             user = cursor.fetchone()
 
             if user and hashing.check_value(user['password'], old_password, PASSWORD_SALT):
                 hashed_password = hashing.hash_value(new_password, PASSWORD_SALT)
                 cursor.execute(
-                    "UPDATE users SET password = %s WHERE username = %s",
+                    "UPDATE users SET password = %s WHERE LOWER(username) = LOWER(%s)",
                     (hashed_password, session['username'])
                 )
                 conn.commit()
@@ -1700,6 +1705,21 @@ def contact():
         if not name or not email or not message:
             flash('Please fill in your name, email, and message.', 'error')
             return redirect(url_for('contact'))
+        if len(message) > 1000:
+           flash('Message must be 1500 characters or less.', 'error')
+           return redirect(url_for('contact'))  
+        
+        if len(name) > 100:
+           flash('Name is too long.', 'error')
+           return redirect(url_for('contact'))
+
+        if len(email) > 190:
+           flash('Email is too long.', 'error')
+           return redirect(url_for('contact'))
+
+        if len(phone) > 20:
+           flash('Phone number is too long.', 'error')
+           return redirect(url_for('contact')) 
 
         # -------- Save to DB -------- #
         try:

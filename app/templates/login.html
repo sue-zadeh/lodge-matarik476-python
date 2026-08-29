@@ -19,23 +19,23 @@
             <form action="{{ url_for('login') }}" method="post" autocomplete="off" class="border-success p-4 rounded">
              <div class="mb-3">
               <label for="username" class="form-label"><i class="fas fa-user"></i>Username</label>
-              <input type="text" class="form-control" id="username" name="username" value="{% if registered %}{{username}}{% endif %}" required>
+              <input type="text" class="form-control" id="username" name="username" value="" autocomplete="off" required>
            </div>
-<div class="mb-3 position-relative">
-  <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
-  <input type="password" class="form-control" id="password" name="password" required>
-  <span onclick="togglePassword('password', this)"
-        style="position:absolute; right:15px; top:38px; cursor:pointer;">
-    <i class="fas fa-eye text-secondary"></i>
-  </span>
-</div>
+           <div class="mb-3 position-relative">
+             <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
+             <input type="password" class="form-control" id="password" name="password" value="" autocomplete="new-password" required>
+             <span onclick="togglePassword('password', this)"
+                   style="position:absolute; right:15px; top:38px; cursor:pointer;">
+               <i class="fas fa-eye text-secondary"></i>
+             </span>
+           </div>
        
-<div class="text-end mb-3">
-    <a href="{{ url_for('forgot_password') }}"
-       class="text-success text-decoration-none">
-        Forgot password?
-    </a>
-</div>
+           <div class="text-end mb-3">
+               <a href="{{ url_for('forgot_password') }}"
+                  class="text-success text-decoration-none">
+                   Forgot password?
+               </a>
+           </div>
 
             {% if toLogin and not registered %}
             <div class="alert alert-danger"   role="alert">

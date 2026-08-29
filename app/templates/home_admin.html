@@ -32,65 +32,126 @@
   <h1 class="text-center text-success mb-2 mt-4">Admin Dashboard</h1>
   <p class="text-center mb-4">Welcome, {{ session.get('username') }}</p>
 
-  <!-- Main tiles -->
-  <div class="row g-4">
+ <!-- ========================= -->
+<!-- ADMIN ACTION CARDS -->
+<!-- ========================= -->
 
-    <div class="col-md-4" data-aos="fade-down-right">
-      <a href="{{ url_for('admin_manage_users') }}" class="text-decoration-none d-block h-100">
-        <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-users fa-2x mb-2"></i>
-            <h5 class="card-title">Manage Members</h5>
-            <p class="card-text small mb-0">View, edit, activate/deactivate, and manage members.</p>
+<!-- First row -->
+<div class="row g-4 mb-4">
+
+  <!-- Manage Members -->
+  <div class="col-12 col-md-6" data-aos="fade-down-right">
+    <a href="{{ url_for('admin_manage_users') }}"
+       class="text-decoration-none d-block h-100">
+
+      <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+        <div class="card-body text-center d-flex flex-column justify-content-between">
+
+          <div>
+            <i class="fas fa-users fa-2x text-warning mb-3"></i>
+
+            <h5 class="card-title text-warning">
+              Manage Members
+            </h5>
+
+            <p class="card-text small mb-0">
+              View, edit, activate or deactivate, and manage members.
+            </p>
           </div>
-        </div>
-      </a>
-    </div>
 
-    <div class="col-md-4" data-aos="fade-down">
-      <a href="{{ url_for('admin_events') }}" class="text-decoration-none d-block h-100">
-        <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-calendar-alt fa-2x mb-2"></i>
-            <h5 class="card-title">Events &amp; Calendar</h5>
-            <p class="card-text small mb-0">Create events, set audience (Members/Admin-only), pin important events.</p>
-          </div>
         </div>
-      </a>
-    </div>
+      </div>
 
-    <div class="col-md-4" data-aos="fade-down-left">
-      <a href="{{ url_for('admin_files') }}" class="text-decoration-none d-block h-100">
-        <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-file-upload fa-2x mb-2"></i>
-            <h5 class="card-title">Files</h5>
-            <p class="card-text small mb-0">Upload files and set audience: Members or Admin-only.</p>
-          </div>
-        </div>
-      </a>
-    </div>
-
+    </a>
   </div>
 
-  <!-- Secondary row -->
-  <div class="row g-4 mt-3 justify-content-center">
 
-    <div class="col-md-4" data-aos="fade-down-right">
-      <a href="{{ url_for('register') }}" class="text-decoration-none d-block h-100">
-        <div class="card bg-dark text-light border-0 shadow-sm h-100 hover-lift">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <h5 class="card-title text-warning">Register Member / Admin</h5>
-            <p class="card-text small mb-0">Add a new user to the system and choose their role.</p>
-            <div class="text-end mt-3">
-              <i class="fas fa-user-plus fa-2x text-warning"></i>
-            </div>
+  <!-- Register Member / Admin -->
+  <div class="col-12 col-md-6" data-aos="fade-down-left">
+    <a href="{{ url_for('register') }}"
+       class="text-decoration-none d-block h-100">
+
+      <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+        <div class="card-body text-center d-flex flex-column justify-content-between">
+
+          <div>
+            <i class="fas fa-user-plus fa-2x text-warning mb-3"></i>
+
+            <h5 class="card-title text-warning">
+              Register Member / Admin
+            </h5>
+
+            <p class="card-text small mb-0">
+              Add a new user and choose whether they are a member or admin.
+            </p>
           </div>
-        </div>
-      </a>
-    </div>
 
+        </div>
+      </div>
+
+    </a>
   </div>
+
+</div>
+
+
+<!-- Second row -->
+<div class="row g-4 mb-4">
+
+  <!-- Events -->
+  <div class="col-12 col-md-6" data-aos="fade-down-right">
+    <a href="{{ url_for('admin_events') }}"
+       class="text-decoration-none d-block h-100">
+
+      <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+        <div class="card-body text-center d-flex flex-column justify-content-between">
+
+          <div>
+            <i class="fas fa-calendar-alt fa-2x text-warning mb-3"></i>
+
+            <h5 class="card-title text-warning">
+              Events &amp; Calendar
+            </h5>
+
+            <p class="card-text small mb-0">
+              Create events, set audience, and pin important events.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </a>
+  </div>
+
+
+  <!-- Files -->
+  <div class="col-12 col-md-6" data-aos="fade-down-left">
+    <a href="{{ url_for('admin_files') }}"
+       class="text-decoration-none d-block h-100">
+
+      <div class="card bg-dark text-light hover-lift shadow-lg rounded h-100">
+        <div class="card-body text-center d-flex flex-column justify-content-between">
+
+          <div>
+            <i class="fas fa-file-upload fa-2x text-warning mb-3"></i>
+
+            <h5 class="card-title text-warning">
+              Files
+            </h5>
+
+            <p class="card-text small mb-0">
+              Upload files and choose whether members or admins can view them.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </a>
+  </div>
+
+</div>
 
   <!-- Admin message to members -->
   <div class="row mt-4 justify-content-center">

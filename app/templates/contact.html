@@ -25,28 +25,48 @@
           <input class="form-control mb-3" type="text" name="phone" placeholder="Phone">
       </div>
       <div class="col-md-5 mb-3" data-aos="fade-up-left">
-          <textarea class="form-control mb-3" name="message" rows="7"
-          placeholder="Your Message" required></textarea>
+          <textarea
+             name="message"
+             id="message"
+             class="form-control"
+             rows="6"
+             maxlength="1500"
+             required
+             placeholder="Your message (maximum 1000 characters)">
+           </textarea>
 
-        </div>
-<div class="text-center">
-   <button type="submit" class="btn btn-warning px-4" id="submitBtn" style="min-width: 180px;">
-    Submit
-  </button>
-</div>
-        </form>
-   <script>
-  const form = document.getElementById("contactForm");
-  const btn = document.getElementById("submitBtn");
+           <small class="text-muted">
+             Maximum 1500 characters.
+             <span id="messageCount">0 / 1000</span>
+           </small>
 
-  if (form && btn) {
-    form.addEventListener("submit", () => {
-      btn.disabled = true;
-      btn.style.opacity = "0.7";
-      btn.innerText = "Sending...";
-    });
-  }
-</script>
+           <script>
+             const messageInput = document.getElementById('message');
+             const messageCount = document.getElementById('messageCount');
+
+             messageInput.addEventListener('input', function () {
+               messageCount.textContent = `${this.value.length} / 1500`;
+             });
+           </script>
+                   </div>
+           <div class="text-center">
+              <button type="submit" class="btn btn-warning px-4" id="submitBtn" style="min-width: 180px;">
+               Submit
+             </button>
+           </div>
+                   </form>
+              <script>
+             const form = document.getElementById("contactForm");
+             const btn = document.getElementById("submitBtn");
+
+             if (form && btn) {
+               form.addEventListener("submit", () => {
+                 btn.disabled = true;
+                 btn.style.opacity = "0.7";
+                 btn.innerText = "Sending...";
+               });
+             }
+           </script>
 
     </div>
   </div>
