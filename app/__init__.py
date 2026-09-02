@@ -36,7 +36,9 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=is_production or os.environ.get("SESSION_COOKIE_SECURE") == "1",
-    WTF_CSRF_TIME_LIMIT=timedelta(hours=2),
+    # Flask-WTF passes this value to itsdangerous as a number of seconds.
+    # Using a timedelta breaks valid POSTs with newer itsdangerous releases.
+    WTF_CSRF_TIME_LIMIT=2 * 60 * 60,
     UPLOAD_FOLDER=_configured_path(
         "UPLOAD_FOLDER", os.path.join(app.instance_path, "protected_profiles")
     ),

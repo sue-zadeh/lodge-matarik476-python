@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from flask_wtf.csrf import generate_csrf, validate_csrf
+
+from app import app
 from app.views import escape_ics_text
 
 
@@ -22,6 +25,14 @@ def test_security_headers_and_private_static_block(client):
 def test_post_without_csrf_token_is_rejected(client):
     response = client.post("/login", data={"username": "someone", "password": "Password123!"})
     assert response.status_code == 400
+
+
+def test_generated_csrf_token_validates_with_configured_expiry():
+    """Protect browser form submissions from CSRF expiry type regressions."""
+
+    with app.test_request_context("/login"):
+        token = generate_csrf()
+        validate_csrf(token)
 
 
 def test_protected_page_redirects_anonymous_user(client):
