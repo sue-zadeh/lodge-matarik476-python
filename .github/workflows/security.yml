@@ -71,7 +71,7 @@ jobs:
         run: |
           PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f database.psql
           mkdir -p "$FILE_UPLOAD_FOLDER" "$UPLOAD_FOLDER"
-          python tests/seed_e2e.py
+          PYTHONPATH=. python tests/seed_e2e.py
 
       - name: Start application
         run: |
