@@ -12,6 +12,10 @@ def get_db():
     """
 
     database_url = os.environ.get("DATABASE_URL")
+    is_production = (
+        os.environ.get("APP_ENV", "development").strip().lower() == "production"
+        or bool(os.environ.get("WEBSITE_HOSTNAME"))
+    )
 
     # 1) Production / Railway / cloud style connection
     if database_url:
@@ -29,22 +33,29 @@ def get_db():
             password=password,
             host=host,
             port=port,
-            sslmode="require"
+            sslmode=os.environ.get("DB_SSLMODE", "require"),
+            connect_timeout=10,
+            application_name="lodge-matariki-web",
         )
         return conn
 
     # 2) Local Docker / local development fallback
     db_name = os.environ.get("DB_NAME", "lodge")
     db_user = os.environ.get("DB_USER", "postgres")
-    db_password = os.environ.get("DB_PASSWORD", "postgres")
+    db_password = os.environ.get("DB_PASSWORD")
     db_host = os.environ.get("DB_HOST", "localhost")
     db_port = int(os.environ.get("DB_PORT", "5432"))
+
+    if is_production and not db_password:
+        raise RuntimeError("DATABASE_URL or DB_PASSWORD must be configured in production.")
 
     conn = psycopg2.connect(
         dbname=db_name,
         user=db_user,
-        password=db_password,
+        password=db_password or "postgres",
         host=db_host,
-        port=db_port
+        port=db_port,
+        connect_timeout=10,
+        application_name="lodge-matariki-web",
     )
     return conn

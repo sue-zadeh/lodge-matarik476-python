@@ -20,6 +20,7 @@
       {% endwith %}-->
 
       <form action="{{ url_for('register') }}" method="post" enctype="multipart/form-data" class="mt-4" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <!-- Username -->
         <div class="form-group mb-3">
           <label for="username"><i class="fas fa-user"></i> Username</label>
@@ -154,7 +155,7 @@
             id="password"
             placeholder="Password"
             required
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{12,}"
             autocomplete="new-password"
           >
           
@@ -163,7 +164,7 @@
           <i class="fas fa-eye text-secondary"></i>
          </span>
           <p class="card-text small">
-            At least 8 characters, with upper, lower, and number.
+            At least 12 characters, with upper, lower, and number.
           </p>
           {% if errors.password %}
              <div class="text-danger small mt-1">{{ errors.password }}</div>
@@ -179,6 +180,7 @@
             class="form-control"
             id="confirm_password"
             placeholder="Confirm Password"
+            minlength="12"
             required
           >
           <span onclick="togglePassword('confirm_password', this)"

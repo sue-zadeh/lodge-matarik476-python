@@ -16,15 +16,20 @@
       Address: 45 Neilson Street, Onehunga, Auckland 1061
     </p>
 
-    <div class="row justify-content-center mt-4" data-aos="fade-up" data-aos-delay="150">
-      <div class="col-md-5 mb-3" data-aos="fade-up-right">
-        <form method="post" class="contact-form" id="contactForm">
-          {{ csrf_token() if csrf_token is defined }}
-          <input class="form-control mb-3" type="text" name="name" placeholder="Name" required>
-          <input class="form-control mb-3" type="email" name="email" placeholder="Email" required>
-          <input class="form-control mb-3" type="text" name="phone" placeholder="Phone">
+    <form method="post" class="contact-form" id="contactForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="d-none" aria-hidden="true">
+        <label for="website">Website</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
       </div>
-      <div class="col-md-5 mb-3" data-aos="fade-up-left">
+
+      <div class="row justify-content-center mt-4" data-aos="fade-up" data-aos-delay="150">
+        <div class="col-md-5 mb-3" data-aos="fade-up-right">
+          <input class="form-control mb-3" type="text" name="name" maxlength="100" placeholder="Name" required>
+          <input class="form-control mb-3" type="email" name="email" maxlength="190" placeholder="Email" required>
+          <input class="form-control mb-3" type="text" name="phone" maxlength="20" placeholder="Phone">
+        </div>
+        <div class="col-md-5 mb-3" data-aos="fade-up-left">
           <textarea
              name="message"
              id="message"
@@ -32,30 +37,31 @@
              rows="6"
              maxlength="1500"
              required
-             placeholder="Your message (maximum 1000 characters)">
+             placeholder="Your message (maximum 1500 characters)">
            </textarea>
 
            <small class="text-muted">
              Maximum 1500 characters.
-             <span id="messageCount">0 / 1000</span>
+             <span id="messageCount">0 / 1500</span>
            </small>
 
-           <script>
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-warning px-4" id="submitBtn" style="min-width: 180px;">
+            Submit
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <script>
              const messageInput = document.getElementById('message');
              const messageCount = document.getElementById('messageCount');
 
              messageInput.addEventListener('input', function () {
                messageCount.textContent = `${this.value.length} / 1500`;
              });
-           </script>
-                   </div>
-           <div class="text-center">
-              <button type="submit" class="btn btn-warning px-4" id="submitBtn" style="min-width: 180px;">
-               Submit
-             </button>
-           </div>
-                   </form>
-              <script>
+
              const form = document.getElementById("contactForm");
              const btn = document.getElementById("submitBtn");
 
@@ -66,9 +72,7 @@
                  btn.innerText = "Sending...";
                });
              }
-           </script>
-
-    </div>
+    </script>
   </div>
 </section>
 {% endblock %}

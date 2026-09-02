@@ -17,6 +17,7 @@
             {% endwith %}-->
             
             <form action="{{ url_for('login') }}" method="post" autocomplete="off" class="border-success p-4 rounded">
+             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
              <div class="mb-3">
               <label for="username" class="form-label"><i class="fas fa-user"></i>Username</label>
               <input type="text" class="form-control" id="username" name="username" value="" autocomplete="off" required>
@@ -56,4 +57,3 @@
       </div>
     </div>
  {% endblock %}
-        
