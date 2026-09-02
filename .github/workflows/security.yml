@@ -1,0 +1,106 @@
+name: Security and end-to-end tests
+
+on:
+  pull_request:
+  push:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: lodge_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-postgres-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lodge_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      APP_ENV: test
+      SECRET_KEY: test-only-secret-key-that-is-at-least-32-characters
+      DB_NAME: lodge_test
+      DB_USER: postgres
+      DB_PASSWORD: test-postgres-password
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      SESSION_COOKIE_SECURE: "0"
+      FILE_UPLOAD_FOLDER: ${{ github.workspace }}/.test-data/protected-files
+      UPLOAD_FOLDER: ${{ github.workspace }}/.test-data/profile-images
+      E2E_BASE_URL: http://127.0.0.1:8000
+      EMAIL_SUPPRESS_SEND: "1"
+      CONTACT_EMAIL: lodgematariki476@outlook.com
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies and Chromium
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Static security and dependency checks
+        run: |
+          python -m pip_audit -r requirements.txt
+          python -m bandit -q -ll -r app connect.py run.py -x tests
+
+      - name: Unit and application security tests
+        run: |
+          python -m pytest -m "not e2e" --cov=app --cov=connect --cov-report=term-missing
+
+      - name: Prepare PostgreSQL test data
+        run: |
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f database.psql
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "DROP INDEX IF EXISTS users_password_reset_token_unique; ALTER TABLE users DROP COLUMN password_reset_token, DROP COLUMN password_reset_token_expiry;"
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f migrations/20260902_add_password_reset_columns.sql
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "SELECT password_reset_token, password_reset_token_expiry FROM users LIMIT 0;"
+          mkdir -p "$FILE_UPLOAD_FOLDER" "$UPLOAD_FOLDER"
+          PYTHONPATH=. python tests/seed_e2e.py
+
+      - name: Start application
+        run: |
+          gunicorn --bind 127.0.0.1:8000 --workers 2 --access-logfile - run:app > /tmp/lodge-app.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/ready > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/lodge-app.log
+          exit 1
+
+      - name: Playwright end-to-end tests
+        run: |
+          python -m pytest tests/e2e --browser chromium --tracing retain-on-failure --screenshot only-on-failure
+
+      - name: Upload failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-evidence
+          path: |
+            /tmp/lodge-app.log
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

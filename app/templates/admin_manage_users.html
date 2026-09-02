@@ -9,20 +9,6 @@
     Admins can search all members and admins, change roles, activate / deactivate, or remove accounts.
   </p>
 
-  <!-- Flash messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="mb-3">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ 'warning' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
   <!-- Search form -->
   <form method="GET" action="{{ url_for('admin_manage_users') }}" class="d-flex gap-2">
   <input class="form-control" type="text" name="search" value="{{ search_term }}"
@@ -45,7 +31,7 @@
           <div class="text-center pt-3">
             <img
               src="{% if user.profile_image %}
-                      {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+                      {{ url_for('profile_image', user_id=user.user_id) }}
                    {% else %}
                       {{ url_for('static', filename='img/logo1.jpg') }}
                    {% endif %}"
@@ -110,6 +96,7 @@
             <form action="{{ url_for('admin_change_role', user_id=user.user_id) }}"
                   method="post"
                   class="mb-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label for="role-{{ user.user_id }}" class="form-label small mb-1">
                 Change role
               </label>
@@ -129,6 +116,7 @@
               <form action="{{ url_for('admin_toggle_active', user_id=user.user_id) }}"
                     method="post"
                     onsubmit="return confirm('Change active status for {{ user.username }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
                   {% if user.is_active %}Deactivate{% else %}Activate{% endif %}
                 </button>
@@ -137,6 +125,7 @@
               <form action="{{ url_for('admin_delete_user', user_id=user.user_id) }}"
                     method="post"
                     onsubmit="return confirm('Are you sure you want to delete {{ user.username }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-danger">
                   Delete
                 </button>

@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.playwright
+test-results
+htmlcov
+app/static/files
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+instance
+tests
+
