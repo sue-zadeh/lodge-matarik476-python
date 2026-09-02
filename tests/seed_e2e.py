@@ -14,6 +14,7 @@ ACCOUNTS = (
     ("e2e_member", "E2E", "Member", "e2e-member@example.test", "MemberPass123!", "member", True),
     ("e2e_pending", "E2E", "Pending", "e2e-pending@example.test", "PendingPass123!", "member", False),
     ("e2e_revocable", "E2E", "Revocable", "e2e-revocable@example.test", "RevocablePass123!", "member", True),
+    ("e2e_reset", "E2E", "Reset", "e2e-reset@example.test", "ResetBefore123!", "member", True),
 )
 
 

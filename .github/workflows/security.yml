@@ -38,6 +38,8 @@ jobs:
       FILE_UPLOAD_FOLDER: ${{ github.workspace }}/.test-data/protected-files
       UPLOAD_FOLDER: ${{ github.workspace }}/.test-data/profile-images
       E2E_BASE_URL: http://127.0.0.1:8000
+      EMAIL_SUPPRESS_SEND: "1"
+      CONTACT_EMAIL: lodgematariki476@outlook.com
 
     steps:
       - name: Check out code
@@ -70,6 +72,9 @@ jobs:
       - name: Prepare PostgreSQL test data
         run: |
           PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f database.psql
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "DROP INDEX IF EXISTS users_password_reset_token_unique; ALTER TABLE users DROP COLUMN password_reset_token, DROP COLUMN password_reset_token_expiry;"
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f migrations/20260902_add_password_reset_columns.sql
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "SELECT password_reset_token, password_reset_token_expiry FROM users LIMIT 0;"
           mkdir -p "$FILE_UPLOAD_FOLDER" "$UPLOAD_FOLDER"
           PYTHONPATH=. python tests/seed_e2e.py
 

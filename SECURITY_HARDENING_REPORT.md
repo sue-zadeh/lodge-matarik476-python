@@ -17,6 +17,7 @@ This branch implements defense in depth while preserving the deployed `main` bra
 | Registration | Public accounts are created inactive and require administrator approval; only an authenticated administrator can create an active account or assign the admin role |
 | Revocation | Every authenticated request refreshes role/active status from PostgreSQL, so deactivation and role changes invalidate existing privileges immediately |
 | Password reset | Random 256-bit token; only SHA-256 digest stored; one-hour expiry; generic account-enumeration-safe response; throttled requests |
+| Contact email | The displayed and delivery address share one configuration value and default to `lodgematariki476@outlook.com`; Outlook is only the recipient, so its password is not stored or required |
 | Request integrity | CSRF protection on every state-changing form; 10 MB request cap; strict server-side length, date, time, role and audience validation |
 | Abuse controls | Login, registration, password-reset and contact-form rate limits; contact-form honeypot |
 | File security | Protected document and profile-image folders outside static assets; public legacy paths blocked; content/extension verification; randomized stored names; per-record role/audience authorization; safe deletion; attachment response |
@@ -58,6 +59,7 @@ These operations cannot be completed safely by source-code changes:
 4. Back up current production uploads and migrate them to a private persistent Azure storage mount before deploying this branch. Set `FILE_UPLOAD_FOLDER` to that mount.
 5. Configure production settings: `APP_ENV=production`, a new 32+ character `SECRET_KEY`, `SESSION_COOKIE_SECURE=1`, `TRUSTED_HOSTS`, database TLS settings and a shared `RATELIMIT_STORAGE_URI`.
 6. Protect `main` and require the **Security and end-to-end tests / verify** check before merge. If you want the Azure deployment workflow itself to depend on this check, approve that production-workflow change separately.
+7. Apply `migrations/20260902_add_password_reset_columns.sql` to the Azure PostgreSQL database before enabling Forgot Password in production.
 
 ## Scope note
 

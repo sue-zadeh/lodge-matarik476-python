@@ -38,4 +38,4 @@ The full PostgreSQL + Playwright suite is reproducibly executed by `.github/work
 
 ## Production requirements
 
-Read [SECURITY.md](SECURITY.md) and [SECURITY_HARDENING_REPORT.md](SECURITY_HARDENING_REPORT.md) before deployment. In particular, rotate previously committed credentials, use a private persistent Azure storage mount for `FILE_UPLOAD_FOLDER`, configure a shared rate-limit backend and require the security workflow before merging to `main`.
+Read [SECURITY.md](SECURITY.md), [SECURITY_HARDENING_REPORT.md](SECURITY_HARDENING_REPORT.md), and [AZURE_DEPLOYMENT_CHECKLIST.md](AZURE_DEPLOYMENT_CHECKLIST.md) before deployment. In particular, rotate previously committed credentials, apply the password-reset migration, use a private persistent Azure storage mount for `FILE_UPLOAD_FOLDER`, configure a shared rate-limit backend and require the security workflow before merging to `main`.

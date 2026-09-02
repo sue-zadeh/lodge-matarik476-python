@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS event_reads (
 );
 
 -- Idempotent hardening for databases created by an older revision.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expiry TIMESTAMPTZ;
 ALTER TABLE users ALTER COLUMN is_active SET DEFAULT FALSE;
 CREATE UNIQUE INDEX IF NOT EXISTS users_password_reset_token_unique
     ON users(password_reset_token) WHERE password_reset_token IS NOT NULL;

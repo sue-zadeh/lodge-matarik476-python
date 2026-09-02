@@ -7,6 +7,9 @@ from urllib.parse import urljoin
 import pytest
 from playwright.sync_api import Browser, Page, expect
 
+from app.security import digest_reset_token
+from connect import get_db
+
 
 pytestmark = pytest.mark.e2e
 BASE_URL = os.environ.get("E2E_BASE_URL", "http://127.0.0.1:8000")
@@ -70,6 +73,84 @@ def test_public_registration_requires_admin_approval(page: Page):
     login(page, "e2e_new_member", "ApplicantPass123!")
     expect(page).to_have_url(url("/login"))
     expect(page.get_by_text("Invalid username or password.")).to_be_visible()
+
+
+def test_contact_form_uses_outlook_and_saves_a_valid_message(page: Page):
+    page.goto(url("/contact"))
+    email_link = page.locator("a[href='mailto:lodgematariki476@outlook.com']")
+    expect(email_link).to_have_text("lodgematariki476@outlook.com")
+
+    page.locator("input[name='name']").fill("Synthetic Visitor")
+    page.locator("input[name='email']").fill("visitor@example.test")
+    page.locator("input[name='phone']").fill("+64 21 000 001")
+    page.locator("textarea[name='message']").fill("Synthetic contact message")
+    page.locator("form#contactForm button[type='submit']").click()
+
+    expect(page.get_by_text("your message has been sent", exact=False)).to_be_visible()
+
+    connection = get_db()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            "SELECT name, email, message FROM contact_messages WHERE email = %s",
+            ("visitor@example.test",),
+        )
+        assert cursor.fetchone() == (
+            "Synthetic Visitor",
+            "visitor@example.test",
+            "Synthetic contact message",
+        )
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def test_forgot_and_reset_password_with_real_database(page: Page):
+    page.goto(url("/forgot-password"))
+    page.locator("input[name='email']").fill("e2e-reset@example.test")
+    page.get_by_role("button", name="Send Reset Link").click()
+    expect(page.get_by_text("If this email is registered", exact=False)).to_be_visible()
+
+    reset_token = "synthetic-known-reset-token"
+    connection = get_db()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT password_reset_token,
+                   password_reset_token_expiry > NOW()
+            FROM users
+            WHERE username = 'e2e_reset'
+            """
+        )
+        stored_digest, is_unexpired = cursor.fetchone()
+        assert stored_digest is not None
+        assert len(stored_digest) == 64
+        assert is_unexpired is True
+
+        cursor.execute(
+            """
+            UPDATE users
+            SET password_reset_token = %s,
+                password_reset_token_expiry = NOW() + INTERVAL '1 hour'
+            WHERE username = 'e2e_reset'
+            """,
+            (digest_reset_token(reset_token),),
+        )
+        connection.commit()
+    finally:
+        cursor.close()
+        connection.close()
+
+    page.goto(url(f"/reset-password/{reset_token}"))
+    page.locator("input[name='new_password']").fill("ResetAfter456!")
+    page.locator("input[name='confirm_password']").fill("ResetAfter456!")
+    page.get_by_role("button", name="Reset Password").click()
+
+    expect(page).to_have_url(url("/login"))
+    expect(page.get_by_text("reset successfully", exact=False)).to_be_visible()
+    login(page, "e2e_reset", "ResetAfter456!")
+    expect(page).to_have_url(url("/member/home"))
 
 
 def test_member_file_and_event_boundaries(page: Page):

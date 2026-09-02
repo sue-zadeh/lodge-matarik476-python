@@ -24,6 +24,10 @@ secret_key = os.environ.get("SECRET_KEY")
 if is_production and (not secret_key or len(secret_key) < 32):
     raise RuntimeError("SECRET_KEY must be set to at least 32 characters in production.")
 app.config["SECRET_KEY"] = secret_key or secrets.token_hex(32)
+contact_email = (
+    os.environ.get("CONTACT_EMAIL", "").strip()
+    or "lodgematariki476@outlook.com"
+)
 
 def _configured_path(variable: str, default_path: str) -> str:
     configured = os.environ.get(variable, default_path)
@@ -39,6 +43,7 @@ app.config.update(
     # Flask-WTF passes this value to itsdangerous as a number of seconds.
     # Using a timedelta breaks valid POSTs with newer itsdangerous releases.
     WTF_CSRF_TIME_LIMIT=2 * 60 * 60,
+    CONTACT_EMAIL=contact_email,
     UPLOAD_FOLDER=_configured_path(
         "UPLOAD_FOLDER", os.path.join(app.instance_path, "protected_profiles")
     ),

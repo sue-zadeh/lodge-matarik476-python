@@ -4,7 +4,7 @@ from flask import abort, render_template, request, redirect, url_for, session, f
 import logging
 import psycopg2
 import psycopg2.extras
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from app import app, limiter
 from app.security import (
     create_reset_token,
@@ -431,7 +431,7 @@ def forgot_password():
                     token, token_digest = create_reset_token()
 
                     # Link valid for one hour
-                    expiry = datetime.utcnow() + timedelta(hours=1)
+                    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
 
                     cursor.execute("""
                         UPDATE users
@@ -580,17 +580,9 @@ def reset_password(token):
   # ============================== Email Message For Forgot Password ===============#
   
 def send_password_reset_email(to_email, reset_link):
-
-    smtp_user = os.environ.get("EMAIL_USER")
-    smtp_pass = os.environ.get("EMAIL_PASS")
-
-    if not smtp_user or not smtp_pass:
-        raise Exception("Missing EMAIL_USER or EMAIL_PASS")
-
     message = EmailMessage()
 
     message["Subject"] = "Reset your Lodge Matariki password"
-    message["From"] = smtp_user
     message["To"] = to_email
 
     message.set_content(
@@ -610,6 +602,18 @@ If you did not request a password reset, you can ignore this email.
 Lodge Matariki 476
 """
     )
+
+    if os.environ.get("EMAIL_SUPPRESS_SEND") == "1":
+        app.logger.info("Password-reset email delivery suppressed in the test environment.")
+        return
+
+    smtp_user = os.environ.get("EMAIL_USER")
+    smtp_pass = os.environ.get("EMAIL_PASS")
+
+    if not smtp_user or not smtp_pass:
+        raise Exception("Missing EMAIL_USER or EMAIL_PASS")
+
+    message["From"] = smtp_user
 
     with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
         smtp.starttls()
@@ -1937,15 +1941,6 @@ def contact():
             flash('Sorry, there was a problem saving your message.', 'error')
             return redirect(url_for('contact'))
 
-        # -------- Prepare email body -------- #
-        body = (
-            f"New enquiry from Lodge website\n\n"
-            f"Name: {name}\n"
-            f"Email: {email}\n"
-            f"Phone: {phone}\n\n"
-            f"Message:\n{message}\n"
-        )
-
         # -------- Send email -------- #
         try:
             send_email(
@@ -1965,40 +1960,10 @@ def contact():
 
     return render_template('contact.html')
   
-  # ------------ Send Email ------ #
-
-# def send_email(subject, body):
-#     msg = EmailMessage()
-#     msg["Subject"] = subject
-
-#     # Use your existing .env keys
-#     smtp_user = os.environ.get("EMAIL_USER")
-#     smtp_pass = os.environ.get("EMAIL_PASS")
-
-#     if not smtp_user or not smtp_pass:
-#         raise Exception("Missing EMAIL_USER / EMAIL_PASS in environment")
-
-#     # where to send (you can send to yourself)
-#     to_addr = os.environ.get("EMAIL_TO", smtp_user)
-
-#     msg["From"] = smtp_user
-#     msg["To"] = to_addr
-#     msg.set_content(body)
-
-#     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-#         smtp.login(smtp_user, smtp_pass)
-#         smtp.send_message(msg)
-
-
-   # pip install pytz (optional but recommended)
+  # ------------ Send Contact Email ------ #
 
 def send_email(subject, body, name, email, phone):
-    smtp_user = os.environ.get("EMAIL_USER")
-    smtp_pass = os.environ.get("EMAIL_PASS")
-    to_addr = os.environ.get("EMAIL_TO", smtp_user)
-
-    if not smtp_user or not smtp_pass:
-        raise Exception("Missing EMAIL_USER or EMAIL_PASS in environment variables")
+    to_addr = app.config["CONTACT_EMAIL"]
 
     nz_time = datetime.now(pytz.timezone("Pacific/Auckland")).strftime("%d %b %Y at %I:%M %p NZDT")
 
@@ -2018,10 +1983,21 @@ Received: {nz_time}
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = smtp_user
     msg["To"] = to_addr
     msg["Reply-To"] = email
     msg.set_content(email_text)
+
+    if os.environ.get("EMAIL_SUPPRESS_SEND") == "1":
+        app.logger.info("Contact email delivery suppressed in the test environment.")
+        return
+
+    smtp_user = os.environ.get("EMAIL_USER")
+    smtp_pass = os.environ.get("EMAIL_PASS")
+
+    if not smtp_user or not smtp_pass:
+        raise Exception("Missing EMAIL_USER or EMAIL_PASS in environment variables")
+
+    msg["From"] = smtp_user
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(smtp_user, smtp_pass)
