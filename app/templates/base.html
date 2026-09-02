@@ -456,7 +456,7 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} text-center alert-auto-hide" role="alert">
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} text-center alert-auto-hide" role="alert">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -571,7 +571,6 @@ window.addEventListener('scroll', function() {
         
 </body>
 </html>
-
 
 
 

@@ -14,18 +14,6 @@
 <div class="container-fluid py-4">
   <h1 class="text-success mb-4">Files for Members</h1>
 
-  <!-- flash messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
   <div class="row g-4">
     <!-- LEFT: table -->
     <div class="col-lg-7">
