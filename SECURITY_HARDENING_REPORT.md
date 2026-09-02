@@ -32,20 +32,24 @@ This branch implements defense in depth while preserving the deployed `main` bra
 
 Local checks completed:
 
-- 17 unit/application security tests passed;
+- 21 unit/application security tests passed;
 - all 20 Jinja templates compiled;
 - Python compilation passed;
 - Bandit reported no medium/high findings;
 - `pip-audit` reported no known vulnerabilities after dependency upgrades.
 
-The GitHub workflow provisions PostgreSQL 16, creates only synthetic accounts/data, starts Gunicorn, installs Chromium and runs six Playwright end-to-end scenarios:
+The GitHub workflow provisions PostgreSQL 16, creates only synthetic accounts/data, starts Gunicorn, installs Chromium and runs eight Playwright end-to-end scenarios:
 
 1. anonymous, inactive member, active member and admin authorization boundaries;
 2. public registration remains pending until admin approval;
-3. member document visibility/download and admin-only denial;
-4. member event visibility plus admin-only ICS/Google denial;
-5. admin event creation, XSS-safe rendering and validated file upload;
-6. CSRF rejection, security headers, static-path blocking and immediate session revocation.
+3. the Contact Us page and delivery destination use the same Outlook address, with a real PostgreSQL insert;
+4. Forgot Password stores only a reset-token digest, observes expiry, resets the password and permits login with the new password;
+5. member document visibility/download and admin-only denial;
+6. member event visibility plus admin-only ICS/Google denial and admin event/file workflows with XSS-safe output;
+7. CSRF rejection, security headers and static-path blocking;
+8. immediate session revocation after an administrator deactivates a member.
+
+The final GitHub Actions run passed all checks: [Security and end-to-end tests run 33630482654](https://github.com/sue-zadeh/lodge-matarik476-python/actions/runs/33630482654).
 
 Failure runs retain the application log, screenshot and Playwright trace for 14 days.
 
