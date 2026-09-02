@@ -555,12 +555,12 @@ def reset_password(token):
                     user['user_id']
                 ))
 
+                session.clear()
+
                 flash(
                     'Your password has been reset successfully. Please login.',
                     'success'
                 )
-
-                session.clear()
 
                 return redirect(url_for('login'))
 
