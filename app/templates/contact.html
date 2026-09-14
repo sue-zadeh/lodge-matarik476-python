@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Contact Us{% endblock %}
+{% block title %}Contact Lodge Matariki 476 | Onehunga, Auckland{% endblock %}
+{% block meta_description %}Contact Lodge Matariki 476 in Onehunga, Auckland. Ask about Freemasonry, membership or visiting the lodge at 45 Neilson Street.{% endblock %}
 
 {% block content %}
 <section class="contact-hero" data-aos="fade-up">
   <div class="container text-center py-5">
-    <h1 class="display-5 mb-4">GET IN TOUCH</h1>
+    <h1 class="display-5 fw-normal mb-4">GET IN TOUCH</h1>
 
     <div class="contact-details mb-4">
       <p class="contact-detail">
@@ -36,15 +37,15 @@
              id="message"
              class="form-control"
              rows="6"
-             maxlength="1500"
+             maxlength="{{ config.CONTACT_MESSAGE_MAX_LENGTH }}"
              aria-label="Message"
              aria-describedby="messageLimit messageCount"
              required
              placeholder="Write your message here..."></textarea>
 
            <small class="message-help d-flex flex-wrap justify-content-between gap-2 mt-2 text-start">
-             <span id="messageLimit">Maximum 1,500 characters.</span>
-             <span id="messageCount">0 / 1,500</span>
+             <span id="messageLimit">Maximum {{ config.CONTACT_MESSAGE_MAX_LENGTH }} characters.</span>
+             <span id="messageCount">0 / {{ config.CONTACT_MESSAGE_MAX_LENGTH }}</span>
            </small>
 
         </div>
