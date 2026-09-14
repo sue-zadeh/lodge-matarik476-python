@@ -51,7 +51,7 @@ def test_contact_email_is_delivered_to_the_configured_outlook_address(monkeypatc
     monkeypatch.delenv("EMAIL_SUPPRESS_SEND", raising=False)
     app.config["CONTACT_EMAIL"] = "lodgematariki476@outlook.com"
 
-    with patch("app.views.smtplib.SMTP_SSL") as smtp_class:
+    with patch("app.mail.smtplib.SMTP_SSL") as smtp_class:
         smtp = smtp_class.return_value.__enter__.return_value
         send_email(
             subject="New enquiry from Lodge website",
@@ -75,7 +75,7 @@ def test_password_reset_email_goes_only_to_the_member(monkeypatch):
     monkeypatch.setenv("EMAIL_PASS", "synthetic-test-secret")
     monkeypatch.delenv("EMAIL_SUPPRESS_SEND", raising=False)
 
-    with patch("app.views.smtplib.SMTP") as smtp_class:
+    with patch("app.mail.smtplib.SMTP_SSL") as smtp_class:
         smtp = smtp_class.return_value.__enter__.return_value
         send_password_reset_email(
             "member@example.test",

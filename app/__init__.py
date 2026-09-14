@@ -35,6 +35,8 @@ def _configured_path(variable: str, default_path: str) -> str:
 
 
 app.config.update(
+    IS_PRODUCTION=is_production,
+    CONTACT_MESSAGE_MAX_LENGTH=500,
     MAX_CONTENT_LENGTH=10 * 1024 * 1024,
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=10),
     SESSION_COOKIE_HTTPONLY=True,
@@ -109,3 +111,8 @@ def handle_file_too_large(_error):
 
 # import routes so they register on the app
 from app import views
+from app.diagnostics import register_diagnostics
+from app.seo import register_seo
+
+register_diagnostics(app)
+register_seo(app)
