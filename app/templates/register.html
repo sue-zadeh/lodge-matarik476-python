@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/password_fields.html' import password_field with context %}
 
 {% block title %}Register{% endblock %}
 
@@ -134,52 +135,10 @@
          {% endif %}
         </div>
 
-        <!-- Password -->
-        <div class="form-group mb-3 position-relative">
-          <label for="password"><i class="fas fa-lock"></i> Password</label>
-          <input
-            type="password"
-            name="password"
-            class="form-control"
-            id="password"
-            placeholder="Password"
-            required
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{12,}"
-            autocomplete="new-password"
-          >
-          
-          <span onclick="togglePassword('password', this)"
-           style="position:absolute; right:15px; top:38px; cursor:pointer;">
-          <i class="fas fa-eye text-secondary"></i>
-         </span>
-          <p class="card-text small">
-            At least 12 characters, with upper, lower, and number.
-          </p>
-          {% if errors.password %}
-             <div class="text-danger small mt-1">{{ errors.password }}</div>
-          {% endif %}
-        </div>
-
-        <!-- Confirm Password -->
-        <div class="form-group mb-3 position-relative">
-          <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
-          <input
-            type="password"
-            name="confirm_password"
-            class="form-control"
-            id="confirm_password"
-            placeholder="Confirm Password"
-            minlength="12"
-            required
-          >
-          <span onclick="togglePassword('confirm_password', this)"
-           style="position:absolute; right:15px; top:38px; cursor:pointer;">
-          <i class="fas fa-eye text-secondary"></i>
-         </span>
-         {% if errors.confirm_password %}
-            <div class="text-danger small mt-1">{{ errors.confirm_password }}</div>
-         {% endif %}
-        </div>
+        {{ password_field('password', 'Password', new_password=true,
+                          error=errors.get('password'), placeholder='Password') }}
+        {{ password_field('confirm_password', 'Confirm Password', confirmation=true,
+                          error=errors.get('confirm_password'), placeholder='Confirm Password') }}
 
         <!-- Profile picture -->
         <div class="form-group mb-3">

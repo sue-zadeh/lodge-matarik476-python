@@ -113,6 +113,8 @@ def handle_file_too_large(_error):
 from app import views
 from app.diagnostics import register_diagnostics
 from app.seo import register_seo
+from app.error_pages import register_error_pages
 
 register_diagnostics(app)
 register_seo(app)
+register_error_pages(app, limiter)

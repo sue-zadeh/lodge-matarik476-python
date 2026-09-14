@@ -7,6 +7,8 @@ import psycopg2.extras
 from datetime import datetime, date, timedelta, timezone
 from app import app, limiter
 from app.security import (
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_REQUIREMENTS,
     create_reset_token,
     digest_reset_token,
     hash_password,
@@ -79,6 +81,14 @@ def password_matches(stored_hash, password):
 @app.context_processor
 def inject_current_year():
     return {'current_year': datetime.now().year, 'date' : date }
+
+@app.context_processor
+def inject_password_requirements():
+    return {
+        "password_min_length": PASSWORD_MIN_LENGTH,
+        "password_requirements": PASSWORD_REQUIREMENTS,
+    }
+
 
 @app.route("/")
 def home():
@@ -527,25 +537,16 @@ def reset_password(token):
                 )
 
                 if new_password != confirm_password:
-                    flash(
-                        'Passwords do not match.',
-                        'danger'
-                    )
-
                     return render_template(
-                        'reset_password.html'
+                        'reset_password.html',
+                        errors={'confirm_password': 'Passwords do not match.'},
                     )
 
                 password_error = password_validation_error(new_password)
                 if password_error:
-
-                    flash(
-                        password_error,
-                        'danger'
-                    )
-
                     return render_template(
-                        'reset_password.html'
+                        'reset_password.html',
+                        errors={'new_password': password_error},
                     )
 
                 password_hash = hash_password(new_password)

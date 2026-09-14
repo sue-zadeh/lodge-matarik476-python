@@ -67,6 +67,33 @@
     >
 
     <style>
+  .password-input .form-control {
+    padding-right: 3.25rem;
+    background-image: none;
+  }
+  .password-toggle {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 2.75rem;
+    border: 0;
+    border-radius: 0 .375rem .375rem 0;
+    background: transparent;
+    color: #56616f;
+    cursor: pointer;
+  }
+  .password-toggle:focus-visible {
+    outline: 2px solid #80621e;
+    outline-offset: -3px;
+  }
+  .password-help {
+    color: #d6dce5;
+    font-size: .9375rem;
+    line-height: 1.6;
+  }
+  .password-error {
+    color: #ffb6bc;
+    font-size: .9375rem;
+  }
   html, body {
     height: 100%;
   }
@@ -513,6 +540,9 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
     <!-- FLASH + PAGE CONTENT -->
        <!-- FLASH + PAGE CONTENT -->
     <main class="container main-content">
+        {% if rate_limited %}
+          {% include 'includes/rate_limit_notice.html' %}
+        {% endif %}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -551,6 +581,10 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
     const input = document.getElementById(inputId);
     if (!input) return;
 
+    const showing = input.type === 'password';
+    const label = spanEl.dataset.passwordLabel || 'password';
+    spanEl.setAttribute('aria-label', (showing ? 'Hide ' : 'Show ') + label);
+    spanEl.setAttribute('aria-pressed', String(showing));
     const icon = spanEl.querySelector('i');
     if (input.type === 'password') {
       input.type = 'text';
@@ -566,6 +600,36 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
       }
     }
   }
+</script>
+
+<script>
+  (function () {
+    const notice = document.getElementById('rate-limit-notice');
+    const wait = document.getElementById('rate-limit-wait');
+    if (!notice || !wait) return;
+    notice.focus();
+    const seconds = Number(wait.dataset.retrySeconds);
+    if (!Number.isFinite(seconds) || seconds <= 0) return;
+    const retryAt = Date.now() + seconds * 1000;
+    function updateWait() {
+      const remaining = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+      if (!remaining) {
+        wait.textContent = 'You can try again now.';
+        return false;
+      }
+      const minutes = Math.floor(remaining / 60);
+      const rest = remaining % 60;
+      const parts = [];
+      if (minutes) parts.push(minutes + (minutes === 1 ? ' minute' : ' minutes'));
+      if (rest) parts.push(rest + (rest === 1 ? ' second' : ' seconds'));
+      wait.textContent = 'Please wait ' + parts.join(' and ') + ' before trying again.';
+      return true;
+    }
+    updateWait();
+    const timer = setInterval(function () {
+      if (!updateWait()) clearInterval(timer);
+    }, 1000);
+  })();
 </script>
 
 <!--message auto-hide after 10 second -->
@@ -588,8 +652,8 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
   });
 </script>
 
-<!--Flask sessions + inactivity timer-if there is no mouse/keyboard activity for 10 minutes, redirect to /logout-->
-
+<!-- Only signed-in members have an inactivity logout timer. -->
+{% if session.get('user_id') %}
 <script>
   (function () {
     let timer;
@@ -615,6 +679,7 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
     resetTimer();
   })();
 </script>
+{% endif %}
 <!--navbar scroll animation-->
 <script>
 window.addEventListener('scroll', function() {
