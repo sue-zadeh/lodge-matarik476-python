@@ -10,7 +10,7 @@
       <div class="bg-dark bg-opacity-50 rounded-3 shadow-lg d-flex align-items-center p-4 hover-lift" data-aos="fade-down-right">
         <img
           src="{% if user and user.profile_image %}
-                  {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+                  {{ url_for('profile_image', user_id=user.user_id) }}
                {% else %}
                   {{ url_for('static', filename='img/logo1.jpg') }}
                {% endif %}"
@@ -163,6 +163,7 @@
           </h5>
 
           <form action="{{ url_for('admin_whats_next') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="form-label small text-secondary">
               Short note that members will see on their home page.
             </label>

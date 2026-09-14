@@ -61,6 +61,7 @@
 
           <div class="d-flex gap-2 flex-column flex-sm-row">
             <form method="post" action="{{ url_for('mark_event_seen', event_id=active_event.event_id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-outline-warning w-100">
                 <i class="fas fa-check me-1"></i> Got it
               </button>
@@ -109,7 +110,7 @@
 
         <img
           src="{% if user.profile_image %}
-                  {{ url_for('static', filename='uploads/' ~ user.profile_image) }}
+                  {{ url_for('profile_image', user_id=user.user_id) }}
                {% else %}
                   {{ url_for('static', filename='img/logo1.jpg') }}
                {% endif %}"

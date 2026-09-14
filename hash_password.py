@@ -1,14 +1,12 @@
-from app import app
-from flask_hashing import Hashing
+from getpass import getpass
 
-PASSWORD_SALT = "1234abcd"
+from app.security import hash_password
 
-hashing = Hashing(app)
 
-plain = "Admin123!"
-hashed = hashing.hash_value(plain, PASSWORD_SALT)
+if __name__ == "__main__":
+    password = getpass("Password to hash: ")
+    confirmation = getpass("Confirm password: ")
+    if password != confirmation:
+        raise SystemExit("Passwords do not match.")
 
-print("HASH:", hashed)
-print("CHECK:", hashing.check_value(hashed, plain, PASSWORD_SALT))  # must be True
-
-# HASH: a971f9009755b0987811c0fffb46e5ab6745ffaf10cfb4c80ae0e659d25c6004
+    print(hash_password(password))

@@ -10,6 +10,7 @@
         enctype="multipart/form-data"
         class="bg-dark text-light p-4 rounded-3 shadow-lg"
         style="max-width: 600px; margin: 0 auto;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
     <div class="mb-3">
       <label for="username" class="form-label" data-aos="fade-down-right">Username</label>
@@ -56,7 +57,7 @@
       <label for="profile_image" class="form-label" data-aos="fade-down-right">Profile Picture</label>
       <input type="file" class="form-control" id="profile_image" name="profile_image">
       {% if user.profile_image %}
-  <img src="{{ url_for('static', filename='uploads/' ~ user.profile_image) }}"
+  <img src="{{ url_for('profile_image', user_id=user.user_id) }}"
        alt="Profile image"
        class="img-fluid mt-3 rounded-circle"
        style="max-width: 120px;">

@@ -14,18 +14,6 @@
 <div class="container-fluid py-4">
   <h1 class="text-success mb-4">Files for Members</h1>
 
-  <!-- flash messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
   <div class="row g-4">
     <!-- LEFT: table -->
     <div class="col-lg-7">
@@ -56,6 +44,7 @@
                     <td>{{ f.created_at.strftime('%d %b %Y %H:%M') }}</td>
                     <td>
   <form method="POST" action="{{ url_for('update_file_audience', file_id=f.file_id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <select name="audience" class="form-select form-select-sm" onchange="this.form.submit()">
       <option value="public" {% if not f.is_admin_only %}selected{% endif %}>Members</option>
       <option value="admin" {% if f.is_admin_only %}selected{% endif %}>Admin only</option>
@@ -72,7 +61,7 @@
 
                     <td>{{ f.uploader }}</td>
                     <td>
-                      <a href="{{ url_for('static', filename='files/' ~ f.filename) }}"
+                      <a href="{{ url_for('download_file', file_id=f.file_id) }}"
                          class="btn btn-sm btn-outline-light" target="_blank">
                         <i class="fas fa-download"></i> Open
                       </a>
@@ -86,6 +75,7 @@
                             action="{{ url_for('delete_file', file_id=f.file_id) }}"
                             class="d-inline"
                             onsubmit="return confirm('Delete this file?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-danger">
                           <i class="fas fa-trash"></i>
                         </button>
@@ -123,6 +113,7 @@
           </p>
 
           <form method="post" enctype="multipart/form-data" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% if file_to_edit %}
               <input type="hidden" name="file_id" value="{{ file_to_edit.file_id }}">
             {% endif %}

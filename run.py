@@ -7,12 +7,11 @@ if os.getenv("RAILWAY_ENVIRONMENT") is None:
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        print("Loaded .env locally")
     except ImportError:
-        print("dotenv not installed - skipping (normal in production)")
+        pass
 
 # Import your app
 from app import app  # this is Flask app
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

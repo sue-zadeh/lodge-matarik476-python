@@ -1,45 +1,34 @@
 import os
 import re
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
-from werkzeug.utils import secure_filename
-from flask_hashing import Hashing
+from flask import abort, render_template, request, redirect, url_for, session, flash, send_from_directory
 import logging
 import psycopg2
 import psycopg2.extras
-from datetime import datetime, date, timedelta
-from app import app
+from datetime import datetime, date, timedelta, timezone
+from app import app, limiter
+from app.security import (
+    create_reset_token,
+    digest_reset_token,
+    hash_password,
+    is_modern_password_hash,
+    password_validation_error,
+    remove_managed_file,
+    save_profile_image,
+    save_protected_document,
+    verify_legacy_password,
+    verify_modern_password,
+)
 from connect import get_db  # our PostgreSQL connection
 from email.message import EmailMessage
 import smtplib
 from urllib.parse import urlencode
 import pytz
 from contextlib import contextmanager
-# For forgot password and tokenimport uuid
-import uuid
 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
+# Kept only to verify old records once; successful login immediately rehashes with scrypt.
+LEGACY_PASSWORD_SALT = '1234abcd'  # nosec B105
 
-PASSWORD_SALT = '1234abcd'
-
-hashing = Hashing(app)
-logging.basicConfig(level=logging.DEBUG)
-
-# profile/member photos
-UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# docs/files that admins send to members
-FILE_UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'files')
-app.config['FILE_UPLOAD_FOLDER'] = FILE_UPLOAD_FOLDER
-
-# ---allowed file
-ALLOWED_FILE_EXTENSIONS = {
-    'pdf', 'doc', 'docx', 'xls', 'xlsx',
-    'ppt', 'pptx', 'txt', 'png', 'jpg', 'jpeg'
-}
-
-def allowed_file_generic(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_FILE_EXTENSIONS
+logging.basicConfig(level=logging.INFO)
   
   
 # ---------- DB helper ----------
@@ -58,19 +47,6 @@ def getCursor(dictionary: bool = False):
 
     return cursor, conn
 
-# ---------- File helpers ----------
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
-
-def save_profile_photo(photo):
-    if photo and allowed_file(photo.filename):
-        filename = secure_filename(photo.filename)
-        photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        photo.save(photo_path)
-        return filename
-    return None
-
 # ---------- Role helper ----------
 
 def render_login_or_register(registered, toLogin, msg, username):
@@ -81,11 +57,23 @@ def render_login_or_register(registered, toLogin, msg, username):
         return render_template("register.html", msg=msg, toLogin=toLogin)
 
 
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 def norm_role(role):
     """Normalize role text from DB/session (handles None, spaces, casing)."""
     return (role or "").strip().lower()
+
+
+def escape_ics_text(value):
+    """Escape user-managed text before placing it in an iCalendar field."""
+
+    return (value or "").replace("\\", "\\\\").replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n").replace(";", "\\;").replace(",", "\\,")
+
+
+def password_matches(stored_hash, password):
+    """Support legacy accounts while all new/changed passwords use scrypt."""
+
+    if is_modern_password_hash(stored_hash):
+        return verify_modern_password(stored_hash, password)
+    return verify_legacy_password(stored_hash, password, LEGACY_PASSWORD_SALT)
 
 # ---------- Routes ----------
 @app.context_processor
@@ -125,6 +113,43 @@ def db_cursor(dictionary=False):
             conn.close()
         except Exception:
             pass
+
+
+@app.before_request
+def refresh_authenticated_identity():
+    """Fail closed when an account is deactivated or its role has changed."""
+
+    user_id = session.get('user_id')
+    if not user_id or request.endpoint in {'static', 'health'}:
+        return None
+
+    try:
+        with db_cursor(dictionary=True) as (cursor, _connection):
+            cursor.execute(
+                """SELECT username, role
+                   FROM users
+                   WHERE user_id = %s AND COALESCE(is_active, TRUE) = TRUE
+                   LIMIT 1""",
+                (user_id,)
+            )
+            current_user = cursor.fetchone()
+    except Exception:
+        app.logger.exception("Session identity refresh failed")
+        session.clear()
+        if request.endpoint not in {'home', 'about', 'our_story', 'contact', 'login', 'register', 'forgot_password', 'reset_password'}:
+            return "Authentication is temporarily unavailable.", 503
+        return None
+
+    if not current_user:
+        session.clear()
+        if request.endpoint not in {'home', 'about', 'our_story', 'contact', 'login', 'register', 'forgot_password', 'reset_password'}:
+            flash('Your session is no longer active. Please contact an administrator.', 'warning')
+            return redirect(url_for('login'))
+        return None
+
+    session['username'] = current_user['username']
+    session['role'] = norm_role(current_user['role'])
+    return None
 #========================about us =============#
 
 @app.route('/about', methods=['GET'])
@@ -139,6 +164,7 @@ def our_story():
 # ------ register form ------- #
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per hour", methods=["POST"])
 def register():
     form = {
         'username': '',
@@ -177,28 +203,26 @@ def register():
         if password != confirm_password:
             errors['confirm_password'] = 'Passwords do not match.'
 
-        if len(form['username']) < 5:
+        if len(form['username']) < 5 or len(form['username']) > 80:
             errors['username'] = 'Username must be at least 5 characters long.'
 
-        if not form['first_name']:
+        if not form['first_name'] or len(form['first_name']) > 80:
             errors['first_name'] = 'First name is required.'
 
-        if not form['last_name']:
+        if not form['last_name'] or len(form['last_name']) > 80:
             errors['last_name'] = 'Last name is required.'
 
-        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', form['email']):
+        if len(form['email']) > 190 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', form['email']):
             errors['email'] = 'Invalid email format.'
 
-        if form['phone'] and not re.match(r'^[0-9+ ]*$', form['phone']):
+        if len(form['phone']) > 40 or (form['phone'] and not re.fullmatch(r'[0-9+ ]*', form['phone'])):
             errors['phone'] = 'Phone must contain digits and + only.'
 
-        if (len(password) < 8 or
-            not re.search(r'[A-Z]', password) or
-            not re.search(r'[a-z]', password) or
-            not re.search(r'[0-9]', password)):
-            errors['password'] = 'Password must be at least 8 characters and include upper, lower and number.'
+        password_error = password_validation_error(password)
+        if password_error:
+            errors['password'] = password_error
 
-        if not form['address']:
+        if not form['address'] or len(form['address']) > 255:
             errors['address'] = 'Address is required.'
 
         # strict YYYY-MM-DD only
@@ -212,16 +236,15 @@ def register():
                 errors['birth_date'] = 'Invalid date. Use real year, month, and day.'
                 birth_date = None
 
-        if file and file.filename:
-            if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                profile_image = filename
-            else:
-                errors['profile_image'] = 'File not allowed.'
-
         if errors:
             return render_template("register.html", form=form, errors=errors)
+
+        if file and file.filename:
+            try:
+                profile_image = save_profile_image(file, app.config['UPLOAD_FOLDER'])
+            except ValueError as error:
+                errors['profile_image'] = str(error)
+                return render_template("register.html", form=form, errors=errors)
 
         cursor, conn = getCursor()
         if not cursor or not conn:
@@ -243,6 +266,7 @@ def register():
         if username_exists:
             cursor.close()
             conn.close()
+            remove_managed_file(app.config['UPLOAD_FOLDER'], profile_image)
 
             errors['username'] = 'Username already exists.'
 
@@ -267,6 +291,7 @@ def register():
         if email_exists:
                cursor.close()
                conn.close()
+               remove_managed_file(app.config['UPLOAD_FOLDER'], profile_image)
           
                errors['email'] = 'Email already exists.'
           
@@ -276,16 +301,17 @@ def register():
                   errors=errors
               )
  
-        password_hash = hashing.hash_value(password, PASSWORD_SALT)
+        password_hash = hash_password(password)
+        is_active = norm_role(session.get('role')) == 'admin'
 
         cursor.execute(
             """
             INSERT INTO users (
                 username, first_name, last_name,
                 email, password, phone, address,
-                birth_date, profile_image, role
+                birth_date, profile_image, role, is_active
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 form['username'],
@@ -297,7 +323,8 @@ def register():
                 form['address'],
                 birth_date,
                 profile_image,
-                form['role']
+                form['role'],
+                is_active
             )
         )
 
@@ -305,7 +332,10 @@ def register():
         cursor.close()
         conn.close()
 
-        flash('Registration successful. Please login now.', 'success')
+        if is_active:
+            flash('Registration successful. The account is active.', 'success')
+        else:
+            flash('Registration received. An administrator must activate the account before login.', 'success')
         return redirect(url_for('login'))
 
     return render_template("register.html", form=form, errors=errors)
@@ -313,6 +343,7 @@ def register():
 #-------------- Login -------------#
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute; 30 per hour", methods=["POST"])
 def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -328,14 +359,24 @@ def login():
                 """, (username,))
                 user = cursor.fetchone()
 
-        except Exception as e:
+                if user and password_matches(user['password'], password):
+                    if not is_modern_password_hash(user['password']):
+                        cursor.execute(
+                            "UPDATE users SET password = %s, updated_at = NOW() WHERE user_id = %s",
+                            (hash_password(password), user['user_id'])
+                        )
+                else:
+                    user = None
+
+        except Exception:
             app.logger.exception("Login DB error")
-            flash('Database error. Please try again.', 'danger')
+            flash('Login is temporarily unavailable. Please try again.', 'danger')
             return redirect(url_for('login'))
 
-        if user and hashing.check_value(user['password'], password, PASSWORD_SALT):
+        if user:
             role = norm_role(user.get('role'))
 
+            session.clear()
             session.permanent = True
             session['user_id'] = user['user_id']
             session['username'] = user['username']
@@ -357,6 +398,7 @@ def login():
 # ---------------- Forgot Password Rout  -----------------------------#
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
+@limiter.limit("3 per hour", methods=["POST"])
 def forgot_password():
 
     if request.method == 'POST':
@@ -385,11 +427,11 @@ def forgot_password():
 
                 if user:
 
-                    # Create a secure one-time token
-                    token = str(uuid.uuid4())
+                    # Store only a digest so a database read cannot expose reset links.
+                    token, token_digest = create_reset_token()
 
                     # Link valid for one hour
-                    expiry = datetime.utcnow() + timedelta(hours=1)
+                    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
 
                     cursor.execute("""
                         UPDATE users
@@ -397,15 +439,25 @@ def forgot_password():
                             password_reset_token_expiry = %s
                         WHERE user_id = %s
                     """, (
-                        token,
+                        token_digest,
                         expiry,
                         user['user_id']
                     ))
 
-                    reset_link = url_for(
-                        'reset_password',
-                        token=token,
-                        _external=True
+                    reset_path = url_for('reset_password', token=token)
+                    public_base_url = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
+                    azure_hostname = os.environ.get('WEBSITE_HOSTNAME', '').strip()
+                    if not public_base_url and azure_hostname:
+                        public_base_url = f"https://{azure_hostname}"
+                    reset_link = (
+                        f"{public_base_url}{reset_path}"
+                        if public_base_url
+                        else url_for(
+                            'reset_password',
+                            token=token,
+                            _external=True,
+                            _scheme=os.environ.get("RESET_URL_SCHEME", request.scheme)
+                        )
                     )
 
                     send_password_reset_email(
@@ -431,6 +483,7 @@ def forgot_password():
 # ======================  Reset Password Rout ===================#
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
+@limiter.limit("5 per hour", methods=["POST"])
 def reset_password(token):
 
     try:
@@ -444,7 +497,7 @@ def reset_password(token):
                   AND password_reset_token_expiry > NOW()
                   AND COALESCE(is_active, TRUE) = TRUE
                 LIMIT 1
-            """, (token,))
+            """, (digest_reset_token(token),))
 
             user = cursor.fetchone()
 
@@ -477,16 +530,11 @@ def reset_password(token):
                         'reset_password.html'
                     )
 
-                # Same password rules as registration
-                if (
-                    len(new_password) < 8
-                    or not re.search(r'[A-Z]', new_password)
-                    or not re.search(r'[a-z]', new_password)
-                    or not re.search(r'[0-9]', new_password)
-                ):
+                password_error = password_validation_error(new_password)
+                if password_error:
 
                     flash(
-                        'Password must be at least 8 characters and include upper, lower and number.',
+                        password_error,
                         'danger'
                     )
 
@@ -494,11 +542,7 @@ def reset_password(token):
                         'reset_password.html'
                     )
 
-                # Use the SAME hashing method as Lodge login/register
-                password_hash = hashing.hash_value(
-                    new_password,
-                    PASSWORD_SALT
-                )
+                password_hash = hash_password(new_password)
 
                 cursor.execute("""
                     UPDATE users
@@ -510,6 +554,8 @@ def reset_password(token):
                     password_hash,
                     user['user_id']
                 ))
+
+                session.clear()
 
                 flash(
                     'Your password has been reset successfully. Please login.',
@@ -534,17 +580,9 @@ def reset_password(token):
   # ============================== Email Message For Forgot Password ===============#
   
 def send_password_reset_email(to_email, reset_link):
-
-    smtp_user = os.environ.get("EMAIL_USER")
-    smtp_pass = os.environ.get("EMAIL_PASS")
-
-    if not smtp_user or not smtp_pass:
-        raise Exception("Missing EMAIL_USER or EMAIL_PASS")
-
     message = EmailMessage()
 
     message["Subject"] = "Reset your Lodge Matariki password"
-    message["From"] = smtp_user
     message["To"] = to_email
 
     message.set_content(
@@ -564,6 +602,18 @@ If you did not request a password reset, you can ignore this email.
 Lodge Matariki 476
 """
     )
+
+    if os.environ.get("EMAIL_SUPPRESS_SEND") == "1":
+        app.logger.info("Password-reset email delivery suppressed in the test environment.")
+        return
+
+    smtp_user = os.environ.get("EMAIL_USER")
+    smtp_pass = os.environ.get("EMAIL_PASS")
+
+    if not smtp_user or not smtp_pass:
+        raise Exception("Missing EMAIL_USER or EMAIL_PASS")
+
+    message["From"] = smtp_user
 
     with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
         smtp.starttls()
@@ -698,7 +748,7 @@ def admin_home():
     
 # ---- logout ---- #
 
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 def logout():
     session.clear()
     flash('You have been logged out.', 'success')
@@ -737,6 +787,35 @@ def profile():
         return render_template("profile-members.html", user=user, messages=messages)
     else:
         return "User not found", 404
+
+
+@app.route('/profiles/<int:user_id>/image')
+def profile_image(user_id):
+    role = norm_role(session.get('role'))
+    if role not in {'member', 'admin'}:
+        abort(404)
+    if role != 'admin' and user_id != session.get('user_id'):
+        abort(404)
+
+    cursor, conn = getCursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT profile_image FROM users WHERE user_id = %s AND is_active = TRUE",
+            (user_id,)
+        )
+        record = cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if not record or not record.get('profile_image'):
+        abort(404)
+    return send_from_directory(
+        app.config['UPLOAD_FOLDER'],
+        record['profile_image'],
+        as_attachment=False,
+        conditional=True,
+    )
       
 
 # ---- Edit Profile ---- #
@@ -770,6 +849,19 @@ def edit_profile():
 
             address = (request.form.get('address') or '').strip()
 
+            if not (5 <= len(username) <= 80):
+                flash('Username must be between 5 and 80 characters.', 'error')
+                return redirect(url_for('edit_profile'))
+            if not first_name or len(first_name) > 80 or not last_name or len(last_name) > 80:
+                flash('First and last name are required and must be 80 characters or less.', 'error')
+                return redirect(url_for('edit_profile'))
+            if len(email) > 190 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email):
+                flash('Please enter a valid email address.', 'error')
+                return redirect(url_for('edit_profile'))
+            if len(address) > 255 or len(phone or '') > 40:
+                flash('Address or phone is too long.', 'error')
+                return redirect(url_for('edit_profile'))
+
             birth_date_raw = (request.form.get('birth_date') or '').strip()
             birth_date = None
             if birth_date_raw:
@@ -796,12 +888,10 @@ def edit_profile():
             profile_image = None
             file = request.files.get('profile_image')
             if file and file.filename:
-                if allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    profile_image = filename
-                else:
-                    flash('File not allowed.', 'error')
+                try:
+                    profile_image = save_profile_image(file, app.config['UPLOAD_FOLDER'])
+                except ValueError as error:
+                    flash(str(error), 'error')
                     return redirect(url_for('edit_profile'))
 
             cursor.execute("""
@@ -818,6 +908,8 @@ def edit_profile():
             """, (username, first_name, last_name, email, phone, address, birth_date, profile_image, user_id))
 
             conn.commit()
+            if profile_image and user and user.get('profile_image') != profile_image:
+                remove_managed_file(app.config['UPLOAD_FOLDER'], user.get('profile_image'))
             flash('Profile updated successfully.', 'success')
             return redirect(url_for('profile'))
 
@@ -841,11 +933,19 @@ def update_profile_image():
         return redirect(url_for('login'))
 
     file = request.files.get('profile_image')
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    if file and file.filename:
+        try:
+            filename = save_profile_image(file, app.config['UPLOAD_FOLDER'])
+        except ValueError as error:
+            flash(str(error), 'error')
+            return redirect(url_for('profile'))
 
         cursor, conn = getCursor()
+        cursor.execute(
+            "SELECT profile_image FROM users WHERE user_id = %s",
+            (session['user_id'],)
+        )
+        old_record = cursor.fetchone()
         cursor.execute(
             "UPDATE users SET profile_image = %s WHERE user_id = %s",
             (filename, session['user_id'])
@@ -853,6 +953,9 @@ def update_profile_image():
         conn.commit()
         cursor.close()
         conn.close()
+
+        if old_record:
+            remove_managed_file(app.config['UPLOAD_FOLDER'], old_record[0])
 
         flash('Profile photo updated.', 'success')
 
@@ -863,11 +966,15 @@ def update_profile_image():
 @app.route('/delete_profile', methods=['POST'])
 def delete_profile():
     if 'user_id' in session:
-        cursor, conn = getCursor()
+        cursor, conn = getCursor(dictionary=True)
+        cursor.execute("SELECT profile_image FROM users WHERE user_id = %s", (session['user_id'],))
+        user_record = cursor.fetchone()
         cursor.execute("DELETE FROM users WHERE user_id = %s", (session['user_id'],))
         conn.commit()
         cursor.close()
         conn.close()
+        if user_record:
+            remove_managed_file(app.config['UPLOAD_FOLDER'], user_record.get('profile_image'))
         session.clear()
         flash('Your account has been deleted successfully.', 'success')
         return redirect(url_for('home'))
@@ -879,7 +986,6 @@ def delete_profile():
 # ---- Change password ---- #
 @app.route('/change_password', methods=['GET', 'POST'])
 def change_password():
-    app.logger.debug('Session: %s', session)
     if 'username' in session:
         if request.method == 'POST':
             old_password = request.form.get('old_password')
@@ -890,22 +996,31 @@ def change_password():
                 flash('New passwords do not match.', 'error')
                 return redirect(url_for('change_password'))
 
+            password_error = password_validation_error(new_password)
+            if password_error:
+                flash(password_error, 'error')
+                return redirect(url_for('change_password'))
+
             cursor, conn = getCursor(dictionary=True)
 
             cursor.execute("SELECT password FROM users WHERE LOWER(username) = LOWER(%s)", (session['username'],))
             user = cursor.fetchone()
 
-            if user and hashing.check_value(user['password'], old_password, PASSWORD_SALT):
-                hashed_password = hashing.hash_value(new_password, PASSWORD_SALT)
+            if user and password_matches(user['password'], old_password):
+                hashed_password = hash_password(new_password)
                 cursor.execute(
-                    "UPDATE users SET password = %s WHERE LOWER(username) = LOWER(%s)",
+                    """UPDATE users
+                       SET password = %s, password_reset_token = NULL,
+                           password_reset_token_expiry = NULL, updated_at = NOW()
+                       WHERE LOWER(username) = LOWER(%s)""",
                     (hashed_password, session['username'])
                 )
                 conn.commit()
                 cursor.close()
                 conn.close()
-                flash('Password changed successfully!', 'success')
-                return redirect(url_for('profile'))
+                session.clear()
+                flash('Password changed successfully. Please login again.', 'success')
+                return redirect(url_for('login'))
             else:
                 cursor.close()
                 conn.close()
@@ -914,7 +1029,6 @@ def change_password():
 
         return render_template('password.html')
 
-    app.logger.debug('Redirecting to login because of missing session')
     flash('You must be logged in to change your password.', 'error')
     return redirect(url_for('login'))
   
@@ -1085,9 +1199,14 @@ def admin_delete_user(user_id):
         return redirect(url_for('admin_manage_users'))
 
     cursor, conn = getCursor()
+    profile_image = None
     try:
+        cursor.execute("SELECT profile_image FROM users WHERE user_id = %s", (user_id,))
+        user_record = cursor.fetchone()
+        profile_image = user_record[0] if user_record else None
         cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
         conn.commit()
+        remove_managed_file(app.config['UPLOAD_FOLDER'], profile_image)
         flash("User removed successfully.", "success")
     except Exception:
         conn.rollback()
@@ -1119,8 +1238,8 @@ def admin_files():
         description = request.form.get('description', '').strip()
         is_admin_only = 'is_admin_only' in request.form
 
-        if not subject:
-            flash('Subject is required.', 'error')
+        if not subject or len(subject) > 255 or len(description) > 2000:
+            flash('Subject is required (maximum 255 characters); notes may be up to 2000 characters.', 'error')
             cursor.close(); conn.close()
             return redirect(url_for('admin_files'))
 
@@ -1134,18 +1253,23 @@ def admin_files():
             return redirect(url_for('admin_files'))
 
         if upload and upload.filename:
-            if not allowed_file_generic(upload.filename):
-                flash('File type not allowed.', 'error')
+            try:
+                filename_on_disk = save_protected_document(
+                    upload, app.config['FILE_UPLOAD_FOLDER']
+                )
+            except ValueError as error:
+                flash(str(error), 'error')
                 cursor.close(); conn.close()
                 return redirect(url_for('admin_files'))
 
-            safe_name = secure_filename(upload.filename)
-            timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-            filename_on_disk = f"{timestamp}_{safe_name}"
-            upload.save(os.path.join(app.config['FILE_UPLOAD_FOLDER'], filename_on_disk))
-
         try:
             if file_id:  # UPDATE
+                cursor.execute("SELECT filename FROM files WHERE file_id = %s", (file_id,))
+                old_record = cursor.fetchone()
+                if not old_record:
+                    if filename_on_disk:
+                        remove_managed_file(app.config['FILE_UPLOAD_FOLDER'], filename_on_disk)
+                    abort(404)
                 cursor.execute("""
                     UPDATE files
                     SET subject = %s,
@@ -1154,15 +1278,19 @@ def admin_files():
                         filename = COALESCE(%s, filename)
                     WHERE file_id = %s
                 """, (subject, description, is_admin_only, filename_on_disk, file_id))
+                old_filename = old_record['filename'] if filename_on_disk else None
                 message = "File updated successfully."
             else:  # CREATE
                 cursor.execute("""
                     INSERT INTO files (subject, description, filename, uploaded_by, is_admin_only)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (subject, description, filename_on_disk, session['user_id'], is_admin_only))
+                old_filename = None
                 message = "File uploaded successfully."
 
             conn.commit()
+            if old_filename:
+                remove_managed_file(app.config['FILE_UPLOAD_FOLDER'], old_filename)
             flash(message, 'success')
             return redirect(url_for('admin_files'))
         except Exception as e:
@@ -1208,6 +1336,8 @@ def update_file_audience(file_id):
         return redirect(url_for('login'))
 
     audience = request.form.get('audience', 'public')  # public/admin
+    if audience not in {'public', 'admin'}:
+        abort(400)
     is_admin_only = True if audience == 'admin' else False
 
     cursor, conn = getCursor()
@@ -1222,15 +1352,34 @@ def update_file_audience(file_id):
     flash('Audience updated.', 'success')
     return redirect(url_for('admin_files'))
 
-# Serve files securely (only for logged-in members/admins)
-@app.route('/files/<path:filename>')
-def download_file(filename):
-    if session.get('role') not in ['member', 'admin']:
+# Serve files securely after checking both the session role and the DB audience.
+@app.route('/files/<int:file_id>/download')
+def download_file(file_id):
+    role = norm_role(session.get('role'))
+    if role not in ['member', 'admin']:
         flash('Please login to access files.', 'danger')
         return redirect(url_for('login'))
 
-    # Serve from FILE_UPLOAD_FOLDER
-    return send_from_directory(app.config['FILE_UPLOAD_FOLDER'], filename, as_attachment=False)  # as_attachment=False to view in browser
+    cursor, conn = getCursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT filename, is_admin_only FROM files WHERE file_id = %s LIMIT 1",
+            (file_id,)
+        )
+        record = cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+    if not record or (record['is_admin_only'] and role != 'admin'):
+        abort(404)
+
+    return send_from_directory(
+        app.config['FILE_UPLOAD_FOLDER'],
+        record['filename'],
+        as_attachment=True,
+        download_name=record['filename'],
+    )
 
 #------------ Delete file -----------#
 
@@ -1239,11 +1388,19 @@ def delete_file(file_id):
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
 
-    cursor, conn = getCursor()
-    cursor.execute("DELETE FROM files WHERE file_id = %s", (file_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    cursor, conn = getCursor(dictionary=True)
+    try:
+        cursor.execute("SELECT filename FROM files WHERE file_id = %s", (file_id,))
+        record = cursor.fetchone()
+        if not record:
+            abort(404)
+        cursor.execute("DELETE FROM files WHERE file_id = %s", (file_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+    remove_managed_file(app.config['FILE_UPLOAD_FOLDER'], record['filename'])
 
     flash('File deleted.', 'success')
     return redirect(url_for('admin_files'))
@@ -1314,11 +1471,23 @@ def admin_events():
                 location = request.form.get('location', '').strip()
 
                 audience = request.form.get('audience', 'members')
+                if audience not in {'members', 'admin'}:
+                    abort(400)
                 is_admin_only = True if audience == 'admin' else False
                 is_pinned = True if request.form.get('is_pinned') else False
 
-                if not title or not event_date or not start_time:
+                if (not title or len(title) > 255 or len(description) > 5000
+                        or len(location) > 255 or not event_date or not start_time):
                     flash('Please fill in Title, Date, and Start time.', 'error')
+                    return redirect(url_for('admin_events'))
+
+                try:
+                    datetime.strptime(event_date, '%Y-%m-%d')
+                    datetime.strptime(start_time, '%H:%M')
+                    if end_time:
+                        datetime.strptime(end_time, '%H:%M')
+                except ValueError:
+                    flash('Please enter a valid event date and time.', 'error')
                     return redirect(url_for('admin_events'))
 
                 if end_time == '':
@@ -1382,9 +1551,9 @@ def admin_event_ics(event_id):
     if e.get('end_time'):
         dt_end = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['end_time']).replace(':','')[:4]}00"
 
-    title = (e.get('title') or 'Lodge Event').replace('\n', ' ')
-    desc = (e.get('description') or '').replace('\n', '\\n')
-    location = (e.get('location') or '').replace('\n', ' ')
+    title = escape_ics_text(e.get('title') or 'Lodge Event')
+    desc = escape_ics_text(e.get('description'))
+    location = escape_ics_text(e.get('location'))
 
     ics = f"""BEGIN:VCALENDAR
 VERSION:2.0
@@ -1412,6 +1581,8 @@ def admin_update_event_audience(event_id):
         return redirect(url_for('login'))
 
     audience = request.form.get('audience', 'members')
+    if audience not in {'members', 'admin'}:
+        abort(400)
     is_admin_only = True if audience == 'admin' else False
 
     cursor, conn = getCursor(dictionary=True)
@@ -1453,8 +1624,18 @@ def admin_edit_event(event_id):
     if end_time == '':
         end_time = None
 
-    if not title or not event_date or not start_time:
+    if (not title or len(title) > 255 or len(description) > 5000
+            or len(location) > 255 or not event_date or not start_time):
         flash('Title, Date, and Start time are required.', 'error')
+        return redirect(url_for('admin_events'))
+
+    try:
+        datetime.strptime(event_date, '%Y-%m-%d')
+        datetime.strptime(start_time, '%H:%M')
+        if end_time:
+            datetime.strptime(end_time, '%H:%M')
+    except ValueError:
+        flash('Please enter a valid event date and time.', 'error')
         return redirect(url_for('admin_events'))
 
     cursor, conn = getCursor(dictionary=True)
@@ -1562,9 +1743,11 @@ def mark_event_seen(event_id):
 
     cursor.execute("""
         INSERT INTO event_reads (event_id, user_id)
-        VALUES (%s, %s)
+        SELECT event_id, %s
+        FROM events
+        WHERE event_id = %s AND is_admin_only = FALSE
         ON CONFLICT (event_id, user_id) DO NOTHING
-    """, (event_id, user_id))
+    """, (user_id, event_id))
     conn.commit()
 
     cursor.close()
@@ -1631,9 +1814,9 @@ def member_event_ics(event_id):
     if e.get('end_time'):
         dt_end = f"{e['event_date'].strftime('%Y%m%d')}T{str(e['end_time']).replace(':','')[:4]}00"
 
-    title = (e.get('title') or 'Lodge Event').replace('\n', ' ')
-    desc = (e.get('description') or '').replace('\n', '\\n')
-    location = (e.get('location') or '').replace('\n', ' ')
+    title = escape_ics_text(e.get('title') or 'Lodge Event')
+    desc = escape_ics_text(e.get('description'))
+    location = escape_ics_text(e.get('location'))
 
     ics = f"""BEGIN:VCALENDAR
 VERSION:2.0
@@ -1659,7 +1842,8 @@ END:VCALENDAR
 
 @app.route('/member/events/<int:event_id>/google')
 def member_event_google(event_id):
-    if session.get('role') not in ('member', 'admin'):
+    role = norm_role(session.get('role'))
+    if role not in ('member', 'admin'):
         return redirect(url_for('login'))
 
     cursor, conn = getCursor(dictionary=True)
@@ -1667,8 +1851,9 @@ def member_event_google(event_id):
         SELECT *
         FROM events
         WHERE event_id = %s
+          AND (%s = 'admin' OR is_admin_only = FALSE)
         LIMIT 1
-    """, (event_id,))
+    """, (event_id, role))
     e = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -1695,17 +1880,24 @@ def member_event_google(event_id):
   # ---------- Contact us ------ #
 
 @app.route('/contact', methods=['GET', 'POST'])
+@limiter.limit("5 per hour", methods=["POST"])
 def contact():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
         message = request.form.get('message', '').strip()
+        website = request.form.get('website', '').strip()
+
+        # Hidden honeypot: return a normal-looking success without storing bot spam.
+        if website:
+            flash('Thank you – your message has been sent.', 'success')
+            return redirect(url_for('contact'))
 
         if not name or not email or not message:
             flash('Please fill in your name, email, and message.', 'error')
             return redirect(url_for('contact'))
-        if len(message) > 1000:
+        if len(message) > 1500:
            flash('Message must be 1500 characters or less.', 'error')
            return redirect(url_for('contact'))  
         
@@ -1717,6 +1909,10 @@ def contact():
            flash('Email is too long.', 'error')
            return redirect(url_for('contact'))
 
+        if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email) or '\n' in email or '\r' in email:
+           flash('Please enter a valid email address.', 'error')
+           return redirect(url_for('contact'))
+
         if len(phone) > 20:
            flash('Phone number is too long.', 'error')
            return redirect(url_for('contact')) 
@@ -1724,7 +1920,6 @@ def contact():
         # -------- Save to DB -------- #
         try:
             cursor, conn = getCursor()
-            print("DB cursor opened, executing INSERT...")  # Debug
             cursor.execute(
                 """
                 INSERT INTO contact_messages (name, email, phone, message)
@@ -1732,22 +1927,19 @@ def contact():
                 """,
                 (name, email, phone, message)
             )
+            retention_days = max(1, int(os.environ.get('CONTACT_RETENTION_DAYS', '90')))
+            cursor.execute(
+                """DELETE FROM contact_messages
+                   WHERE created_at < NOW() - (%s * INTERVAL '1 day')""",
+                (retention_days,)
+            )
             conn.commit()
             cursor.close()
             conn.close()
-        except Exception as e:
-            # If DB fails we still try to send email, but you could log e
+        except Exception:
+            app.logger.exception("Contact message database error")
             flash('Sorry, there was a problem saving your message.', 'error')
             return redirect(url_for('contact'))
-
-        # -------- Prepare email body -------- #
-        body = (
-            f"New enquiry from Lodge website\n\n"
-            f"Name: {name}\n"
-            f"Email: {email}\n"
-            f"Phone: {phone}\n\n"
-            f"Message:\n{message}\n"
-        )
 
         # -------- Send email -------- #
         try:
@@ -1760,49 +1952,18 @@ def contact():
             )
 
             flash('Thank you – your message has been sent.', 'success')
-        except Exception as e:
-            print("EMAIL ERROR:", repr(e))
-            # You can log(e) if you want
+        except Exception:
+            app.logger.exception("Contact email delivery error")
             flash('Your message was saved, but there was a problem sending email.', 'error')
 
         return redirect(url_for('contact'))
 
     return render_template('contact.html')
   
-  # ------------ Send Email ------ #
-
-# def send_email(subject, body):
-#     msg = EmailMessage()
-#     msg["Subject"] = subject
-
-#     # Use your existing .env keys
-#     smtp_user = os.environ.get("EMAIL_USER")
-#     smtp_pass = os.environ.get("EMAIL_PASS")
-
-#     if not smtp_user or not smtp_pass:
-#         raise Exception("Missing EMAIL_USER / EMAIL_PASS in environment")
-
-#     # where to send (you can send to yourself)
-#     to_addr = os.environ.get("EMAIL_TO", smtp_user)
-
-#     msg["From"] = smtp_user
-#     msg["To"] = to_addr
-#     msg.set_content(body)
-
-#     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-#         smtp.login(smtp_user, smtp_pass)
-#         smtp.send_message(msg)
-
-
-   # pip install pytz (optional but recommended)
+  # ------------ Send Contact Email ------ #
 
 def send_email(subject, body, name, email, phone):
-    smtp_user = os.environ.get("EMAIL_USER")
-    smtp_pass = os.environ.get("EMAIL_PASS")
-    to_addr = os.environ.get("EMAIL_TO", smtp_user)
-
-    if not smtp_user or not smtp_pass:
-        raise Exception("Missing EMAIL_USER or EMAIL_PASS in environment variables")
+    to_addr = app.config["CONTACT_EMAIL"]
 
     nz_time = datetime.now(pytz.timezone("Pacific/Auckland")).strftime("%d %b %Y at %I:%M %p NZDT")
 
@@ -1822,10 +1983,21 @@ Received: {nz_time}
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = smtp_user
     msg["To"] = to_addr
     msg["Reply-To"] = email
     msg.set_content(email_text)
+
+    if os.environ.get("EMAIL_SUPPRESS_SEND") == "1":
+        app.logger.info("Contact email delivery suppressed in the test environment.")
+        return
+
+    smtp_user = os.environ.get("EMAIL_USER")
+    smtp_pass = os.environ.get("EMAIL_PASS")
+
+    if not smtp_user or not smtp_pass:
+        raise Exception("Missing EMAIL_USER or EMAIL_PASS in environment variables")
+
+    msg["From"] = smtp_user
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(smtp_user, smtp_pass)
@@ -1835,6 +2007,19 @@ Received: {nz_time}
 @app.route('/health')
 def health():
     return "OK", 200
+
+
+@app.route('/ready')
+@limiter.exempt
+def ready():
+    try:
+        with db_cursor() as (cursor, _connection):
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception:
+        app.logger.exception("Readiness database check failed")
+        return "NOT READY", 503
+    return "READY", 200
   
   
     #==================== temporary route =======#
@@ -1847,5 +2032,3 @@ def health():
 #     cursor.close()
 #     conn.close()
 #     return row
-
-  

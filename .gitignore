@@ -150,6 +150,14 @@ __pycache__/
 *.pyc
 *.PublishSettings
 docker-compose.local.yml
+.env.*
+!.env.example
+instance/
+app/static/files/
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+test-results/
+playwright-report/
 # Spyder project settings
 .spyderproject
 .spyproject
