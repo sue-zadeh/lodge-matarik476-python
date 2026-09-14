@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Please try again later | Lodge Matariki 476{% endblock %}
+{% block content %}
+<section class="py-4 text-center">
+  <h1>Please try again later</h1>
+  <p>You can continue browsing while you wait.</p>
+  <a class="btn btn-warning" href="{{ url_for('home') }}">Back to Home</a>
+</section>
+{% endblock %}

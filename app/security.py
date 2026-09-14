@@ -17,6 +17,10 @@ from werkzeug.utils import secure_filename
 
 
 PASSWORD_MIN_LENGTH = 12
+PASSWORD_REQUIREMENTS = (
+    f"Use at least {PASSWORD_MIN_LENGTH} characters, including an uppercase letter, "
+    "a lowercase letter and a number."
+)
 PROFILE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
 Image.MAX_IMAGE_PIXELS = 25_000_000

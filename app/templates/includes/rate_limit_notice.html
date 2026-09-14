@@ -1,0 +1,14 @@
+<div id="rate-limit-notice" class="alert alert-warning" role="alert" tabindex="-1">
+  <h2 class="h5">Too many requests — please wait</h2>
+  <p id="rate-limit-wait" {% if retry_after_seconds %}data-retry-seconds="{{ retry_after_seconds }}"{% endif %}>
+    {% if retry_after_minutes %}
+    Please wait about {{ retry_after_minutes }} minute{{ 's' if retry_after_minutes != 1 else '' }} before trying again.
+    {% else %}
+    Please wait and try again later.
+    {% endif %}
+  </p>
+  <p class="mb-0">{{ rate_limit_help }}</p>
+  {% if request.endpoint == 'reset_password' %}
+  <p class="mt-2 mb-0"><a class="alert-link" href="{{ url_for('forgot_password') }}">Request a new reset link</a></p>
+  {% endif %}
+</div>
