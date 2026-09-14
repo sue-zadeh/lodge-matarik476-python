@@ -6,15 +6,16 @@
   <div class="container text-center py-5">
     <h1 class="display-5 mb-4">GET IN TOUCH</h1>
 
-    <!-- <p class="mb-2"><i class="fas fa-phone-alt me-2"></i>Phone: 021 000 0000</p>-->
-    <p class="mb-2">
-      <i class="fas fa-envelope me-2"></i>
-      Email: <a href="mailto:{{ config.CONTACT_EMAIL }}">{{ config.CONTACT_EMAIL }}</a>
-    </p>
-    <p class="mb-4">
-      <i class="fas fa-map-marker-alt me-2"></i>
-      Address: 45 Neilson Street, Onehunga, Auckland 1061
-    </p>
+    <div class="contact-details mb-4">
+      <p class="contact-detail">
+        <i class="fas fa-envelope" aria-hidden="true"></i>
+        <span>Email: <a href="mailto:{{ config.CONTACT_EMAIL }}">{{ config.CONTACT_EMAIL }}</a></span>
+      </p>
+      <p class="contact-detail">
+        <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+        <span>Address: 45 Neilson Street, Onehunga, Auckland 1061</span>
+      </p>
+    </div>
 
     <form method="post" class="contact-form" id="contactForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -36,13 +37,14 @@
              class="form-control"
              rows="6"
              maxlength="1500"
+             aria-label="Message"
+             aria-describedby="messageLimit messageCount"
              required
-             placeholder="Your message (maximum 1500 characters)">
-           </textarea>
+             placeholder="Write your message here..."></textarea>
 
-           <small class="text-muted">
-             Maximum 1500 characters.
-             <span id="messageCount">0 / 1500</span>
+           <small class="message-help d-flex flex-wrap justify-content-between gap-2 mt-2 text-start">
+             <span id="messageLimit">Maximum 1,500 characters.</span>
+             <span id="messageCount">0 / 1,500</span>
            </small>
 
         </div>
@@ -58,9 +60,15 @@
              const messageInput = document.getElementById('message');
              const messageCount = document.getElementById('messageCount');
 
-             messageInput.addEventListener('input', function () {
-               messageCount.textContent = `${this.value.length} / 1500`;
-             });
+             if (messageInput && messageCount) {
+               const updateMessageCount = () => {
+                 const count = messageInput.value.length.toLocaleString('en-NZ');
+                 const limit = messageInput.maxLength.toLocaleString('en-NZ');
+                 messageCount.textContent = `${count} / ${limit}`;
+               };
+               messageInput.addEventListener('input', updateMessageCount);
+               updateMessageCount();
+             }
 
              const form = document.getElementById("contactForm");
              const btn = document.getElementById("submitBtn");

@@ -321,14 +321,66 @@ background-image: url("data:image/svg+xml,%3Csvg width='220' height='14' viewBox
   color: #fff;
 }
 
+.contact-details {
+  font-size: clamp(1.125rem, 1rem + 0.35vw, 1.25rem);
+  line-height: 1.65;
+}
+
+.contact-detail {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+}
+
+.contact-detail span {
+  min-width: 0;
+}
+
+.contact-detail .fas {
+  flex-shrink: 0;
+  color: #e4bb64;
+}
+
+.contact-details a {
+  color: #e4bb64;
+  overflow-wrap: anywhere;
+  text-underline-offset: 0.2em;
+}
+
+.contact-details a:hover {
+  color: #ffe1a0;
+}
+
+.contact-details a:focus-visible {
+  outline: 2px solid #e4bb64;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
 .contact-form .form-control {
   background-color: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.25);
   color: #fff;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  padding: 0.625rem 0.875rem;
 }
 
 .contact-form .form-control::placeholder {
-  color: rgba(255,255,255,0.6);
+  color: #b8c2d1;
+}
+
+.contact-form .message-help {
+  color: #cbd5e1;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.contact-form #messageCount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
   
@@ -571,7 +623,6 @@ window.addEventListener('scroll', function() {
         
 </body>
 </html>
-
 
 
 
