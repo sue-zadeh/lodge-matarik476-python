@@ -8,15 +8,15 @@ os.environ.setdefault("SESSION_COOKIE_SECURE", "0")
 
 import pytest
 
-from app import app
+from app import app, limiter
 
 
 @pytest.fixture()
 def client(tmp_path):
+    limiter.reset()
     app.config.update(
         TESTING=True,
         FILE_UPLOAD_FOLDER=str(tmp_path / "protected"),
         UPLOAD_FOLDER=str(tmp_path / "uploads"),
     )
     return app.test_client()
-

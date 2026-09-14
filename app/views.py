@@ -20,7 +20,7 @@ from app.security import (
 )
 from connect import get_db  # our PostgreSQL connection
 from email.message import EmailMessage
-import smtplib
+from app.mail import deliver_email
 from urllib.parse import urlencode
 import pytz
 from contextlib import contextmanager
@@ -406,10 +406,11 @@ def forgot_password():
         # Email typed by the user
         email = request.form.get('email', '').strip().lower()
 
-        if not email:
+        if not email or len(email) > 190:
             flash('Please enter your email address.', 'danger')
             return redirect(url_for('forgot_password'))
 
+        reset_delivery = None
         try:
             with db_cursor(dictionary=True) as (cursor, conn):
 
@@ -445,7 +446,7 @@ def forgot_password():
                     ))
 
                     reset_path = url_for('reset_password', token=token)
-                    public_base_url = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
+                    public_base_url = os.environ.get('PUBLIC_BASE_URL', '').strip().rstrip('/')
                     azure_hostname = os.environ.get('WEBSITE_HOSTNAME', '').strip()
                     if not public_base_url and azure_hostname:
                         public_base_url = f"https://{azure_hostname}"
@@ -460,18 +461,23 @@ def forgot_password():
                         )
                     )
 
-                    send_password_reset_email(
-                        user['email'],
-                        reset_link
-                    )
+                    reset_delivery = (user['email'], reset_link)
 
-        except Exception:
-            app.logger.exception('Forgot password error')
+            # Commit and close the database transaction before sending the link.
+            if reset_delivery:
+                send_password_reset_email(*reset_delivery)
+
+        except Exception as error:
+            # Never put addresses, credentials, or reset links in diagnostic logs.
+            app.logger.error(
+                'Password reset failed (%s). Run flask --app run mail-check.',
+                type(error).__name__,
+            )
 
         # Always show same message.
         # Do not tell people whether an email exists.
         flash(
-            'If this email is registered, a password reset link has been sent.',
+            'If this email is registered and active, you will receive a password reset link. Please check your inbox and spam folder.',
             'success'
         )
 
@@ -603,27 +609,7 @@ Lodge Matariki 476
 """
     )
 
-    if os.environ.get("EMAIL_SUPPRESS_SEND") == "1":
-        app.logger.info("Password-reset email delivery suppressed in the test environment.")
-        return
-
-    smtp_user = os.environ.get("EMAIL_USER")
-    smtp_pass = os.environ.get("EMAIL_PASS")
-
-    if not smtp_user or not smtp_pass:
-        raise Exception("Missing EMAIL_USER or EMAIL_PASS")
-
-    message["From"] = smtp_user
-
-    with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-        smtp.starttls()
-
-        smtp.login(
-            smtp_user,
-            smtp_pass
-        )
-
-        smtp.send_message(message)
+    deliver_email(message)
         
         
 # ------ Routes for home_members and home_admins ------ #
@@ -1897,8 +1883,8 @@ def contact():
         if not name or not email or not message:
             flash('Please fill in your name, email, and message.', 'error')
             return redirect(url_for('contact'))
-        if len(message) > 1500:
-           flash('Message must be 1500 characters or less.', 'error')
+        if len(message) > app.config['CONTACT_MESSAGE_MAX_LENGTH']:
+           flash(f"Message must be {app.config['CONTACT_MESSAGE_MAX_LENGTH']} characters or less.", 'error')
            return redirect(url_for('contact'))  
         
         if len(name) > 100:
@@ -1952,8 +1938,8 @@ def contact():
             )
 
             flash('Thank you – your message has been sent.', 'success')
-        except Exception:
-            app.logger.exception("Contact email delivery error")
+        except Exception as error:
+            app.logger.error("Contact email delivery failed (%s).", type(error).__name__)
             flash('Your message was saved, but there was a problem sending email.', 'error')
 
         return redirect(url_for('contact'))
@@ -1987,21 +1973,7 @@ Received: {nz_time}
     msg["Reply-To"] = email
     msg.set_content(email_text)
 
-    if os.environ.get("EMAIL_SUPPRESS_SEND") == "1":
-        app.logger.info("Contact email delivery suppressed in the test environment.")
-        return
-
-    smtp_user = os.environ.get("EMAIL_USER")
-    smtp_pass = os.environ.get("EMAIL_PASS")
-
-    if not smtp_user or not smtp_pass:
-        raise Exception("Missing EMAIL_USER or EMAIL_PASS in environment variables")
-
-    msg["From"] = smtp_user
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(smtp_user, smtp_pass)
-        smtp.send_message(msg)
+    deliver_email(msg)
       
  #===== minimal health-check route =====#     
 @app.route('/health')

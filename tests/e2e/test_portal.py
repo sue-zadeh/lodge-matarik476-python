@@ -105,6 +105,22 @@ def test_contact_form_uses_outlook_and_saves_a_valid_message(page: Page):
         connection.close()
 
 
+def test_contact_message_limit_and_counter(page: Page):
+    page.goto(url("/contact"))
+    message = page.get_by_role("textbox", name="Message", exact=True)
+    expect(page.get_by_text("Maximum 500 characters.", exact=True)).to_be_visible()
+    expect(page.locator("#messageCount")).to_have_text("0 / 500")
+    expect(message).to_have_value("")
+    message.fill("a" * 499)
+    expect(page.locator("#messageCount")).to_have_text("499 / 500")
+    message.press("b")
+    message.press("c")
+    expect(message).to_have_value("a" * 499 + "b")
+    expect(page.locator("#messageCount")).to_have_text("500 / 500")
+    message.fill("")
+    expect(page.locator("#messageCount")).to_have_text("0 / 500")
+
+
 def test_forgot_and_reset_password_with_real_database(page: Page):
     page.goto(url("/forgot-password"))
     page.locator("input[name='email']").fill("e2e-reset@example.test")
