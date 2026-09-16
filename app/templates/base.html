@@ -9,9 +9,9 @@
     <meta name="description"
     content="{% block meta_description %}Lodge Matariki 476 in Auckland, New Zealand. Discover our history, events, community and Freemasonry activities.{% endblock %}">
 
-<meta name="organization" content="Lodge Matariki 476">
+    <meta name="organization" content="Lodge Matariki 476">
 
-<meta name="robots" content="{{ seo_robots }}">
+    <meta name="robots" content="{{ seo_robots }}">
 
 {% if seo_canonical_url %}
 <link rel="canonical"
@@ -19,28 +19,28 @@
 {% endif %}
 
 <!-- Open Graph / Facebook / LinkedIn -->
-<meta property="og:type" content="website">
-<meta property="og:title"
+    <meta property="og:type" content="website">
+    <meta property="og:title"
       content="{% block og_title %}{{ self.title()|striptags|trim }}{% endblock %}">
-<meta property="og:description"
+    <meta property="og:description"
       content="{% block og_description %}{{ self.meta_description()|striptags|trim }}{% endblock %}">
 {% if seo_canonical_url %}
-<meta property="og:url"
+    <meta property="og:url"
       content="{{ seo_canonical_url }}">
 {% endif %}
-<meta property="og:image"
+    <meta property="og:image"
       content="{{ seo_site_url }}/static/img/logo1.png">
-<meta property="og:image:alt" content="Lodge Matariki 476 logo">
-<meta property="og:site_name" content="Lodge Matariki 476">
-<meta property="og:locale" content="en_NZ">
+    <meta property="og:image:alt" content="Lodge Matariki 476 logo">
+    <meta property="og:site_name" content="Lodge Matariki 476">
+    <meta property="og:locale" content="en_NZ">
 
-<!-- Twitter / social sharing -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title"
+    <!-- Twitter / social sharing -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title"
       content="{% block twitter_title %}{{ self.og_title()|striptags|trim }}{% endblock %}">
-<meta name="twitter:description"
+    <meta name="twitter:description"
       content="{% block twitter_description %}{{ self.og_description()|striptags|trim }}{% endblock %}">
-<meta name="twitter:image"
+    <meta name="twitter:image"
       content="{{ seo_site_url }}/static/img/logo1.png">
 {% if seo_organization %}
 <script type="application/ld+json">{{ seo_organization|tojson }}</script>
